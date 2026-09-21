@@ -1,0 +1,85 @@
+/*
+ * Settings layout.
+ *
+ * Each accordion section is a `card` surface (#18181b) with a 14px radius and
+ * a hairline border, sitting on the near-black dialog shell (#09090b) — a
+ * clear two-level hierarchy. A 1px inset highlight along the top edge gives
+ * the cards a subtle raised-glass feel.
+ */
+.dubbed-settings-section {
+  border: 1px solid var(--dubbed-border-color);
+  border-radius: var(--dubbed-radius-l);
+  padding: var(--dubbed-space-2);
+  background: rgb(var(--dubbed-card-rgb));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  display: flex;
+  flex-direction: column;
+
+  // Avoid `gap` for predictable layout across host pages.
+  & > * {
+    margin: 0 !important;
+  }
+
+  // Spacing between header and content.
+  & > * + * {
+    margin-top: var(--dubbed-space-1) !important;
+  }
+}
+
+.dubbed-settings-section-header {
+  margin: 0 !important;
+  padding: 0.55em 0.6em !important;
+  border-radius: var(--dubbed-radius-m);
+}
+
+.dubbed-settings-section-header .dubbed-details-arrow-icon {
+  transition: transform var(--dubbed-duration-medium) var(--dubbed-easing-standard);
+}
+
+.dubbed-settings-section-header[data-open="true"] .dubbed-details-arrow-icon {
+  transform: rotate(0deg);
+}
+
+.dubbed-settings-section-content {
+  // Shared grid variables for "settings rows".
+  // Components (select/slider) read these to align their right column.
+  --dubbed-settings-control-width: 200px;
+  // Slightly tighter vertical rhythm for long settings pages.
+  --dubbed-settings-row-gap: var(--dubbed-space-1);
+
+  display: flex;
+  flex-direction: column;
+  padding: 0 0 var(--dubbed-space-1);
+
+  & > * {
+    margin: 0 !important;
+  }
+
+  & > * + * {
+    margin-top: var(--dubbed-settings-row-gap) !important;
+  }
+
+  // Consistent padding + full-row hit area.
+  // IMPORTANT: never override component `display` values here. Some controls
+  // (hotkey, select, slider) rely on flex/grid internally.
+  // Apply only to *direct* children.
+  // Some rows are composite controls (e.g. Select/Slider with a checkbox as
+  // the label element). Styling nested `.dubbed-checkbox` would add double
+  // padding and break alignment.
+  //
+  // Padding is VERTICAL ONLY on purpose: a composite row's checkbox lives
+  // inside the control (`.dubbed-slider > span > .dubbed-checkbox`), so any
+  // horizontal inset on the row shifts that checkbox's glyph off the line
+  // shared with the standalone checkbox rows. `.dubbed-checkbox` itself is
+  // `width: 100%` (see checkbox.scss), so the label still fills the row.
+  & > .dubbed-checkbox,
+  & > .dubbed-hotkey,
+  & > .dubbed-textfield,
+  & > .dubbed-select,
+  & > .dubbed-slider {
+    width: 100% !important;
+    padding: var(--dubbed-space-1) 0;
+    border-radius: var(--dubbed-radius-s);
+    box-sizing: border-box;
+  }
+}

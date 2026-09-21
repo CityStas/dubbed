@@ -1,0 +1,41 @@
+@use "./mixins" as button;
+
+/*
+ * shadcn `Button` — default variant.
+ * `bg-primary text-primary-foreground hover:bg-primary/90`
+ *
+ * On the dark zinc theme `primary` is near-white (#e4e4e7) and
+ * `primary-foreground` is near-black (#18181b) — the signature shadcn
+ * light-on-dark filled button.
+ */
+.dubbed-button {
+  --dubbed-helper-theme: var(
+    --dubbed-theme-rgb,
+    var(--dubbed-primary-rgb, 33, 150, 243)
+  );
+  --dubbed-helper-ontheme: var(
+    --dubbed-ontheme-rgb,
+    var(--dubbed-primary-foreground-rgb, 255, 255, 255)
+  );
+  @include button.dubbed-button-base(
+    $radius: var(--dubbed-radius-m),
+    $padding: 0 var(--dubbed-space-4),
+    $min-width: 64px,
+    $height: 36px,
+    $line-height: 1
+  );
+  border: 1px solid transparent !important;
+  color: rgb(var(--dubbed-helper-ontheme)) !important;
+  background-color: rgb(var(--dubbed-helper-theme)) !important;
+  box-shadow: var(--dubbed-shadow-xs);
+  @include button.dubbed-button-focus;
+  @include button.dubbed-button-disabled;
+
+  &:hover:not([disabled="true"]) {
+    background-color: rgba(var(--dubbed-helper-theme), 0.9) !important;
+  }
+
+  &:active:not([disabled="true"]) {
+    background-color: rgba(var(--dubbed-helper-theme), 0.82) !important;
+  }
+}

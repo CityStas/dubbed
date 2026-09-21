@@ -1,0 +1,33 @@
+/*
+ * Information row: a label on the left, a de-emphasised value on the right.
+ */
+.dubbed-info {
+  display: flex;
+  align-items: baseline;
+  gap: var(--dubbed-space-3);
+  color: rgb(var(--dubbed-foreground-rgb));
+  font-family: var(
+    --dubbed-font-family,
+    "Inter",
+    "Inter var",
+    "Geist",
+    "Segoe UI Variable Text",
+    "Segoe UI",
+    system-ui,
+    sans-serif
+  );
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: start;
+  user-select: text;
+
+  & > :first-child {
+    font-weight: 500 !important;
+  }
+
+  & > :not(:first-child) {
+    color: rgb(var(--dubbed-muted-foreground-rgb));
+    flex: 1;
+    margin-left: 0 !important;
+  }
+}

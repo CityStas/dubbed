@@ -1,0 +1,62 @@
+import path from "node:path";
+import { crx } from "@crxjs/vite-plugin";
+import { defineConfig, type Plugin, type UserConfig } from "vite";
+import { type BuildConfig, buildDefine, getBuildConfig } from "./lib/env";
+import {
+  finalizeChromeBuild,
+  getChromeExtensionBuildEnv,
+} from "./lib/extension/chrome-postbuild";
+import manifest from "./lib/extension/manifest.config";
+import { distExtDir } from "./lib/paths";
+import { createBaseViteConfig } from "./lib/vite-base-config";
+
+function chromePackagePlugin(
+  config: BuildConfig,
+  headers: {
+    version?: string;
+    author?: string;
+  },
+): Plugin {
+  return {
+    name: "dubbed-chrome-package",
+    apply: "build",
+    enforce: "post",
+    async closeBundle() {
+      await finalizeChromeBuild(config, headers);
+    },
+  };
+}
+
+export default defineConfig(async ({ mode }) => {
+  const buildConfig = getBuildConfig(mode);
+  const baseConfig = createBaseViteConfig({ cacheName: "chrome-extension" });
+  const { headers, locales, branch } =
+    await getChromeExtensionBuildEnv(buildConfig);
+
+  return {
+    ...baseConfig,
+    plugins: [crx({ manifest }), chromePackagePlugin(buildConfig, headers)],
+    define: buildDefine({
+      // DUBBED_DEBUG=1 → сборка с отладочными логами ([Dubbed DEBUG]).
+      debug: process.env.DUBBED_DEBUG === "1",
+      isExtension: true,
+      availableLocales: locales,
+      repoBranch: branch,
+      version: String(headers.version || ""),
+      authors: String(headers.author || ""),
+      crxjsBuild: true,
+    }),
+    server: {
+      cors: {
+        origin: [/chrome-extension:\/\//],
+      },
+    },
+    build: {
+      ...baseConfig.build,
+      outDir: path.join(distExtDir, "chrome"),
+      emptyOutDir: true,
+      sourcemap: false,
+      minify: "oxc",
+    },
+  } satisfies UserConfig;
+});

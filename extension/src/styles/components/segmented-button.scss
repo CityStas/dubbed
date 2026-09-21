@@ -1,0 +1,351 @@
+@use "../mixins" as shared;
+
+/*
+ * Floating toolbar (segmented button).
+ *
+ * Rebuilt as a frosted **pill**: 999px radius, translucent `card` surface with
+ * a 10px backdrop blur, hairline border and a soft elevation. Over video this
+ * reads as a modern glass control instead of a grey rounded rectangle.
+ *
+ * All placement / drag / dock behaviour and the `data-*` state hooks are
+ * unchanged.
+ */
+.dubbed-segmented-button {
+  --dubbed-helper-theme-rgb: var(--dubbed-foreground-rgb, 0, 0, 0);
+  --dubbed-helper-theme: rgb(var(--dubbed-helper-theme-rgb));
+
+  // IMPORTANT (NicoNico and similar sites): some host pages/scripts aggressively
+  // write inline styles like `opacity: 0; pointer-events: none; touch-action: none;`
+  // to elements they don't recognize.
+  //
+  // We intentionally *own* these properties via author CSS + `!important` and
+  // drive state using a class. This way, external inline styles cannot make the
+  // button permanently invisible/non-interactive.
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  touch-action: none !important;
+  --dubbed-button-default-top: 5rem;
+  --dubbed-button-top-offset: max(16px, env(safe-area-inset-top, 0px));
+  --dubbed-button-side-offset: max(16px, env(safe-area-inset-left, 0px));
+  --dubbed-button-side-offset-right: max(16px, env(safe-area-inset-right, 0px));
+  --dubbed-button-side-top-offset: max(
+    clamp(48px, 12.5vh, 128px),
+    env(safe-area-inset-top, 0px)
+  );
+
+  overflow: hidden;
+  position: absolute;
+  left: 50%;
+  right: auto;
+  top: var(--dubbed-button-default-top);
+  transform: translateX(-50%);
+
+  @media (pointer: coarse) {
+    --dubbed-button-default-top: 3rem;
+    --dubbed-button-top-offset: max(12px, env(safe-area-inset-top, 0px));
+    --dubbed-button-side-offset: max(10px, env(safe-area-inset-left, 0px));
+    --dubbed-button-side-offset-right: max(10px, env(safe-area-inset-right, 0px));
+    --dubbed-button-side-top-offset: max(
+      clamp(42px, 12.5vh, 112px),
+      env(safe-area-inset-top, 0px)
+    );
+  }
+
+  user-select: none;
+  display: flex;
+  align-items: center;
+  height: 36px;
+  max-width: 100vw;
+  background: rgba(var(--dubbed-card-rgb), 0.86);
+  // Order matters — see `dubbed-backdrop-blur` in _mixins.scss.
+  @include shared.dubbed-backdrop-blur(blur(10px) saturate(140%));
+  color: var(--dubbed-helper-theme);
+  fill: var(--dubbed-helper-theme);
+  border: 1px solid var(--dubbed-border-color) !important;
+  border-radius: var(--dubbed-radius-pill) !important;
+  box-shadow: var(--dubbed-shadow-1) !important;
+  @include shared.dubbed-font-family;
+  font-size: 14px;
+  line-height: 1.5;
+  cursor: default;
+  transition: opacity var(--dubbed-duration-slow) var(--dubbed-easing-standard);
+  z-index: 2147483647;
+
+  &.dubbed-segmented-button--hidden {
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  &.dubbed-segmented-button--dragging {
+    left: 0 !important;
+    right: auto !important;
+    top: 0 !important;
+    transform: translate3d(
+      var(--dubbed-button-drag-left, 0px),
+      var(--dubbed-button-drag-top, 0px),
+      0
+    ) !important;
+    opacity: 0.96 !important;
+    cursor: grabbing;
+    transition: none !important;
+    will-change: transform;
+    box-shadow: var(--dubbed-shadow-2) !important;
+  }
+
+  &.dubbed-segmented-button--dock-preview {
+    opacity: 0.72 !important;
+    pointer-events: none !important;
+    z-index: 2147483646;
+    border-color: var(--dubbed-border-color) !important;
+    box-shadow: var(--dubbed-shadow-1) !important;
+    transition:
+      left var(--dubbed-duration-medium) var(--dubbed-easing-standard),
+      right var(--dubbed-duration-medium) var(--dubbed-easing-standard),
+      top var(--dubbed-duration-medium) var(--dubbed-easing-standard),
+      transform var(--dubbed-duration-medium) var(--dubbed-easing-standard),
+      opacity var(--dubbed-duration-fast) var(--dubbed-easing-standard);
+  }
+
+  & * {
+    box-sizing: border-box !important;
+  }
+
+  & .dubbed-separator {
+    width: 1px;
+    height: 40%;
+    flex: 0 0 auto;
+    background: var(--dubbed-border-color);
+  }
+
+  & .dubbed-segment {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    padding: 0 var(--dubbed-space-3) !important;
+    background-color: transparent;
+    color: inherit;
+    transition: background-color var(--dubbed-duration-fast)
+      var(--dubbed-easing-standard);
+    border: none !important;
+
+    // Prevent default UA focus outline (it gets clipped by overflow and shows as stripes).
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+
+    // Fallback: show focus ring on :focus (for browsers without :focus-visible),
+    // but hide it for pointer focus when :focus-visible is supported.
+    &:focus {
+      outline: none;
+      box-shadow: inset 0 0 0 2px var(--dubbed-focus-ring-color);
+    }
+
+    &:focus:not(:focus-visible) {
+      box-shadow: none;
+    }
+
+    &:hover:not([disabled="true"]) {
+      background-color: rgba(var(--dubbed-accent-rgb), 0.9);
+    }
+
+    &:active:not([disabled="true"]) {
+      background-color: rgba(var(--dubbed-accent-rgb), 0.7);
+    }
+
+    & > svg,
+    &-label,
+    .dubbed-dropdown-arrow {
+      position: relative;
+      z-index: 1;
+    }
+
+    &-only-icon {
+      @extend .dubbed-segment;
+      min-width: 36px;
+      padding: 0 !important;
+    }
+
+    &-label {
+      margin-left: var(--dubbed-space-2) !important;
+      white-space: nowrap;
+      color: inherit;
+      font-weight: 500 !important;
+      letter-spacing: -0.011em;
+    }
+  }
+
+  & .dubbed-translate-button {
+    gap: 0 !important;
+    padding-inline-end: 4px !important;
+  }
+
+  & .dubbed-dropdown-arrow {
+    position: relative;
+    display: inline-flex;
+    flex: 0 0 auto;
+    justify-content: center;
+    align-items: center;
+    width: 30px;
+    min-width: 30px;
+    height: 100%;
+    margin-inline-start: 4px !important;
+    margin-inline-end: -4px !important;
+    color: inherit;
+    fill: inherit;
+    opacity: 0.9;
+    cursor: default;
+    border-radius: var(--dubbed-radius-pill);
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+
+    &:hover {
+      background-color: rgba(var(--dubbed-accent-rgb), 0.9);
+    }
+
+    &:focus {
+      box-shadow: inset 0 0 0 2px var(--dubbed-focus-ring-color);
+    }
+
+    &:focus:not(:focus-visible) {
+      box-shadow: none;
+    }
+
+    &[hidden] {
+      display: none !important;
+    }
+
+    svg {
+      width: 20px;
+      height: 20px;
+      transform: none;
+      transform-origin: center;
+      transition: transform var(--dubbed-duration-fast) var(--dubbed-easing-standard);
+    }
+
+    &[aria-expanded="true"] svg,
+    &.dubbed-dropdown-arrow--open svg {
+      transform: rotate(180deg);
+    }
+  }
+
+  & .dubbed-subtitles-button[data-active="true"] {
+    color: rgb(var(--dubbed-primary-rgb));
+    fill: rgb(var(--dubbed-primary-rgb));
+  }
+
+  &[data-status="success"] .dubbed-dropdown-arrow {
+    color: rgb(var(--dubbed-primary-rgb));
+    fill: rgb(var(--dubbed-primary-rgb));
+  }
+
+  &[data-status="error"] .dubbed-dropdown-arrow {
+    color: rgb(var(--dubbed-destructive-rgb));
+    fill: rgb(var(--dubbed-destructive-rgb));
+  }
+
+  &[data-status="success"] .dubbed-translate-button {
+    color: rgb(var(--dubbed-primary-rgb));
+    fill: rgb(var(--dubbed-primary-rgb));
+  }
+
+  &[data-status="error"] .dubbed-translate-button {
+    color: rgb(var(--dubbed-destructive-rgb));
+    fill: currentColor;
+  }
+
+  &[data-loading="true"] {
+    #dubbed-loading-icon {
+      display: block !important;
+    }
+
+    #dubbed-translate-icon {
+      display: none !important;
+    }
+
+    .dubbed-translate-logo {
+      display: none !important;
+    }
+
+    .dubbed-translate-loader {
+      display: inline-flex;
+    }
+  }
+
+  // Show the loader for the plain "loading" status as well (e.g. the initial
+  // "Подготавливаем видео к переводу..." submit step), not only for the
+  // ETA/delayed "error" status that sets `data-loading="true"`.
+  &[data-status="loading"] .dubbed-translate-logo {
+    display: none !important;
+  }
+
+  &[data-status="loading"] .dubbed-translate-loader {
+    display: inline-flex;
+  }
+
+  &[data-direction="column"] {
+    flex-direction: column;
+    height: fit-content;
+    border-radius: var(--dubbed-radius-l) !important;
+
+    & .dubbed-segment-label,
+    & .dubbed-dropdown-arrow {
+      display: none;
+    }
+
+    & > .dubbed-segment-only-icon,
+    & > .dubbed-segment {
+      padding: 8px !important;
+    }
+
+    .dubbed-separator {
+      height: 1px;
+      width: 50%;
+    }
+  }
+
+  &[data-position="left"] {
+    left: var(--dubbed-button-side-offset);
+    right: auto;
+    top: var(--dubbed-button-side-top-offset);
+    transform: none;
+  }
+
+  &[data-position="right"] {
+    left: auto;
+    right: var(--dubbed-button-side-offset-right);
+    top: var(--dubbed-button-side-top-offset);
+    transform: none;
+  }
+
+  &[data-position="leftCenter"] {
+    left: var(--dubbed-button-side-offset);
+    right: auto;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  &[data-position="rightCenter"] {
+    left: auto;
+    right: var(--dubbed-button-side-offset-right);
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  & svg {
+    width: 20px;
+    height: 20px;
+    fill: inherit;
+    stroke: inherit;
+  }
+
+  // Brand mark (PNG data URI) — matched to the 20px icon size used above.
+  & .dubbed-translate-logo {
+    width: 20px;
+    height: 20px;
+    flex: 0 0 auto;
+    border-radius: var(--dubbed-radius-xs);
+    object-fit: contain;
+  }
+}

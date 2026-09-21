@@ -1,0 +1,134 @@
+@use "../mixins" as shared;
+
+/*
+ * Tooltip.
+ *
+ * Inverted surface — near-white `foreground` background with near-black text —
+ * 10px radius, 12px text, 12/6 padding. On a dark interface this is the most
+ * legible and the most "designed" treatment: the tooltip reads as a separate
+ * material instead of another grey panel.
+ *
+ * `--dubbed-helper-ondialog` is resolved on this element because the settings
+ * view applies it as an inline `background-color` (see views/settings.ts).
+ */
+.dubbed-tooltip {
+  --dubbed-helper-theme-rgb: var(--dubbed-foreground-rgb, 0, 0, 0);
+  --dubbed-helper-theme: rgb(var(--dubbed-helper-theme-rgb));
+  --dubbed-helper-ondialog: var(--dubbed-foreground-rgb);
+  --dubbed-helper-border: rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  background: rgb(var(--dubbed-foreground-rgb));
+  color: rgb(var(--dubbed-background-rgb));
+  fill: rgb(var(--dubbed-background-rgb));
+  border-radius: var(--dubbed-radius-m) !important;
+  @include shared.dubbed-font-family;
+  font-size: 12px;
+  font-weight: 500 !important;
+  line-height: 1.4;
+  cursor: default;
+  transition: opacity 0.5s;
+  position: absolute;
+  z-index: 2147483647;
+  inset: 0;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    0 8px 24px rgba(0, 0, 0, 0.35);
+  width: max-content;
+  max-width: calc(100vw - 10px);
+  height: max-content;
+  padding: 6px 12px !important;
+  opacity: 0;
+
+  &[data-trigger="click"] {
+    user-select: text;
+  }
+
+  &[data-mode="follow"] {
+    align-items: stretch;
+    pointer-events: auto;
+    user-select: text;
+
+    &,
+    & * {
+      user-select: text !important;
+    }
+  }
+
+  &.dubbed-tooltip-bordered {
+    border: 1px solid var(--dubbed-helper-border);
+  }
+
+  & * {
+    box-sizing: border-box !important;
+    font-family: inherit !important;
+  }
+
+  /*
+   * Subtitle word bubble — intentionally a dark glass panel (rendered over
+   * video, not over our own surfaces), so it keeps its own palette.
+   */
+  &.dubbed-tooltip--subtitles-info {
+    padding: 0 !important;
+    overflow: visible;
+    background: transparent !important;
+    box-shadow: none !important;
+    border-radius: var(--dubbed-radius-l) !important;
+
+    .dubbed-subtitles-info {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: max-content;
+      max-width: min(420px, calc(100vw - 24px));
+      padding: 14px 16px !important;
+      border-radius: var(--dubbed-radius-l) !important;
+      background: rgba(9, 9, 11, 0.94) !important;
+      color: rgba(255, 255, 255, 0.92) !important;
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      box-shadow:
+        0 12px 30px rgba(0, 0, 0, 0.4),
+        0 2px 6px rgba(0, 0, 0, 0.3) !important;
+      font-size: 13px !important;
+      line-height: 1.35 !important;
+      letter-spacing: 0 !important;
+    }
+
+    .dubbed-subtitles-info-title {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      min-width: 0;
+      font-size: 15px !important;
+      line-height: 1.35 !important;
+      font-weight: 600 !important;
+    }
+
+    .dubbed-subtitles-info-source {
+      color: rgba(255, 255, 255, 0.94) !important;
+      overflow-wrap: anywhere;
+    }
+
+    .dubbed-subtitles-info-divider {
+      color: rgba(255, 255, 255, 0.42) !important;
+      font-weight: 500 !important;
+    }
+
+    .dubbed-subtitles-info-header {
+      color: rgb(var(--dubbed-primary-rgb)) !important;
+      overflow-wrap: anywhere;
+    }
+
+    .dubbed-subtitles-info-context {
+      max-width: 100%;
+      color: rgba(255, 255, 255, 0.68) !important;
+      font-size: 13px !important;
+      line-height: 1.45 !important;
+      font-weight: 400 !important;
+      overflow-wrap: anywhere;
+    }
+  }
+}

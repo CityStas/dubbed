@@ -1,0 +1,73 @@
+@mixin dubbed-hidden-attr {
+  &[hidden] {
+    display: none !important;
+  }
+}
+
+@mixin dubbed-font-family {
+  font-family: var(
+    --dubbed-font-family,
+    "Inter",
+    "Inter var",
+    "Geist",
+    "Segoe UI Variable Text",
+    "Segoe UI",
+    system-ui,
+    sans-serif
+  ) !important;
+}
+
+/*
+ * Frosted-glass blur.
+ *
+ * DECLARATION ORDER IS LOAD-BEARING. The build minifies CSS with lightningcss,
+ * which treats `-webkit-backdrop-filter` and `backdrop-filter` as the *same*
+ * property and keeps only the LAST one. Writing the unprefixed form first (the
+ * usual "modern first, prefixed fallback second" habit) makes the build ship
+ * `-webkit-backdrop-filter` alone — and Chrome never supported that prefix, so
+ * it drops the declaration and the blur silently disappears.
+ *
+ * Always emit through this mixin: prefixed first, unprefixed last.
+ */
+@mixin dubbed-backdrop-blur($value) {
+  -webkit-backdrop-filter: $value;
+  backdrop-filter: $value;
+}
+
+/*
+ * Slim overlay scrollbar.
+ *
+ * A 10px gutter with a rounded, translucent thumb inset by 3px — reads as a
+ * thin floating indicator rather than a desktop scrollbar.
+ */
+@mixin dubbed-overlay-scrollbar(
+  $surface-var: --dubbed-helper-surface,
+  $thumb-rgb-var: --dubbed-helper-onsurface-rgb
+) {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(#{$thumb-rgb-var}), 0.18) transparent !important;
+
+  &::-webkit-scrollbar,
+  &::-webkit-scrollbar-track {
+    width: 10px !important;
+    height: 10px !important;
+    background: transparent !important;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(var(#{$thumb-rgb-var}), 0.18) !important;
+    border-radius: 999px !important;
+    border: 3px solid transparent !important;
+    background-clip: content-box !important;
+
+    &:hover {
+      background: rgba(var(#{$thumb-rgb-var}), 0.32) !important;
+      background-clip: content-box !important;
+      border-width: 3px !important;
+    }
+  }
+
+  &::-webkit-scrollbar-corner {
+    background: transparent !important;
+  }
+}

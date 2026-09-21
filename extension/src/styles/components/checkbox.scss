@@ -1,0 +1,191 @@
+/*
+ * shadcn `Checkbox`.
+ *
+ *   size-4 (16px) · rounded-[4px] · 1px border · translucent input well
+ *   checked  → bg-primary + primary-foreground check
+ *   focus    → border-ring + 3px ring-ring/50
+ *   disabled → opacity 50
+ *
+ * The old Material "ripple halo" pseudo-element is gone; the check mark is a
+ * masked lucide-style glyph so it stays crisp at 16px.
+ */
+.dubbed-checkbox {
+  // Keeps label padding and `.dubbed-checkbox-sub` indentation in sync.
+  --dubbed-checkbox-label-offset: 26px;
+  --dubbed-helper-theme: var(
+    --dubbed-theme-rgb,
+    var(--dubbed-primary-rgb, 33, 150, 243)
+  );
+  --dubbed-helper-ontheme: var(
+    --dubbed-ontheme-rgb,
+    var(--dubbed-primary-foreground-rgb, 255, 255, 255)
+  );
+  --dubbed-check-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E");
+  z-index: 0;
+  position: relative;
+  /*
+   * A checkbox is a *row*, not an inline widget: it must always fill its
+   * container. Two reasons this matters:
+   *
+   * 1. `inline-block` shrink-wraps, so a checkbox used as a Slider/Select label
+   *    (`.dubbed-slider > span > .dubbed-checkbox`) comes out narrower than its
+   *    standalone siblings and its glyph drifts off the shared left line.
+   * 2. Without a bounded width the label stops wrapping and spills past the card
+   *    on long phrases.
+   */
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  color: rgb(var(--dubbed-foreground-rgb));
+  font-family: var(
+    --dubbed-font-family,
+    "Inter",
+    "Geist",
+    "Roboto",
+    "Segoe UI",
+    system-ui,
+    sans-serif
+  ) !important;
+  text-transform: none !important;
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: start;
+
+  &-sub {
+    // Indent child checkboxes so their *box* aligns with the parent label text.
+    padding-left: var(--dubbed-checkbox-label-offset) !important;
+  }
+
+  & > input {
+    appearance: none;
+    z-index: 10000;
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    display: block;
+    box-sizing: border-box;
+    margin: 0 !important;
+    padding: 0 !important;
+    /* Telegram Web */
+    opacity: 1;
+    border: 1px solid var(--dubbed-input-color) !important;
+    background-color: rgba(var(--dubbed-input-rgb), 0.045) !important;
+    /* Safari */
+    border-radius: var(--dubbed-radius-xs) !important;
+    width: 16px;
+    height: 16px;
+    box-shadow: var(--dubbed-shadow-xs);
+    outline: none;
+    cursor: pointer;
+    transition:
+      background-color var(--dubbed-duration-fast) var(--dubbed-easing-standard),
+      border-color var(--dubbed-duration-fast) var(--dubbed-easing-standard),
+      box-shadow var(--dubbed-duration-fast) var(--dubbed-easing-standard);
+
+    & + span {
+      position: relative;
+      display: inline-block;
+      font-family: inherit;
+      box-sizing: border-box;
+      padding-left: var(--dubbed-checkbox-label-offset) !important;
+      width: inherit;
+      cursor: pointer;
+      font-weight: normal !important;
+
+      &::before {
+        content: none !important;
+        display: none !important;
+      }
+
+      // Masked check glyph, centered inside the 16px box.
+      &::after {
+        content: "";
+        z-index: 10000;
+        display: block;
+        position: absolute;
+        left: 0;
+        top: 50%;
+        box-sizing: border-box !important;
+        width: 16px;
+        height: 16px;
+        border: none !important;
+        pointer-events: none;
+        opacity: 0;
+        transform: translateY(-50%) scale(0.72);
+        background-color: rgb(var(--dubbed-helper-ontheme));
+        -webkit-mask: var(--dubbed-check-icon) center / 11px 11px no-repeat;
+        mask: var(--dubbed-check-icon) center / 11px 11px no-repeat;
+        transition:
+          opacity var(--dubbed-duration-fast) var(--dubbed-easing-standard),
+          transform var(--dubbed-duration-fast) var(--dubbed-easing-standard);
+      }
+    }
+
+    &:hover:not(:disabled) {
+      // fix odysee
+      box-shadow: none !important;
+      border-color: var(--dubbed-input-color-hover) !important;
+      background-color: rgba(var(--dubbed-input-rgb), 0.075) !important;
+    }
+
+    &:checked,
+    &:indeterminate {
+      border-color: transparent !important;
+      background-color: rgb(var(--dubbed-helper-theme)) !important;
+      box-shadow: none !important;
+
+      & + span::after {
+        opacity: 1;
+        transform: translateY(-50%) scale(1);
+      }
+    }
+
+    // Indeterminate → a dash instead of the check glyph.
+    &:indeterminate + span::after {
+      -webkit-mask: linear-gradient(#000 0 0) center / 8px 2px no-repeat;
+      mask: linear-gradient(#000 0 0) center / 8px 2px no-repeat;
+    }
+  }
+
+  & > input:disabled {
+    border-color: var(--dubbed-input-color) !important;
+    background-color: rgba(var(--dubbed-input-rgb), 0.02) !important;
+    cursor: not-allowed;
+
+    &:checked,
+    &:indeterminate {
+      border-color: transparent !important;
+      background-color: rgba(var(--dubbed-helper-theme), 0.4) !important;
+    }
+
+    & + span {
+      color: rgba(var(--dubbed-foreground-rgb), 0.5);
+      cursor: not-allowed;
+
+      &::after {
+        opacity: 0;
+      }
+    }
+
+    &:checked + span::after,
+    &:indeterminate + span::after {
+      opacity: 0.5;
+    }
+  }
+}
+
+// Keyboard-only focus indicator (kept subtle, but present for accessibility).
+@at-root {
+  html.dubbed-keyboard-nav .dubbed-checkbox > input:focus-visible {
+    box-shadow: var(--dubbed-focus-ring) !important;
+    border-color: rgb(var(--dubbed-ring-rgb)) !important;
+  }
+
+  @supports not selector(:focus-visible) {
+    html.dubbed-keyboard-nav .dubbed-checkbox > input:focus {
+      box-shadow: var(--dubbed-focus-ring) !important;
+      border-color: rgb(var(--dubbed-ring-rgb)) !important;
+    }
+  }
+}

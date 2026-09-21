@@ -1,0 +1,38 @@
+@use "./mixins" as button;
+
+/*
+ * shadcn `Button` — outline variant (dark).
+ * `border-input bg-input/30 hover:bg-input/50`
+ *
+ * Translucent light wells over the surface behind them, separated by a
+ * hairline border — the standard shadcn secondary action.
+ */
+.dubbed-outlined-button {
+  --dubbed-helper-theme: var(
+    --dubbed-theme-rgb,
+    var(--dubbed-primary-rgb, 33, 150, 243)
+  );
+  @include button.dubbed-button-base(
+    $radius: var(--dubbed-radius-m),
+    $padding: 0 var(--dubbed-space-4),
+    $min-width: 64px,
+    $height: 36px,
+    $line-height: 1,
+    $margin: 0 !important
+  );
+  border: 1px solid var(--dubbed-input-color) !important;
+  color: rgb(var(--dubbed-foreground-rgb)) !important;
+  background-color: rgba(var(--dubbed-input-rgb), 0.045) !important;
+  box-shadow: var(--dubbed-shadow-xs);
+  @include button.dubbed-button-focus;
+  @include button.dubbed-button-disabled;
+
+  &:hover:not([disabled="true"]) {
+    background-color: rgba(var(--dubbed-input-rgb), 0.075) !important;
+    border-color: var(--dubbed-input-color-hover) !important;
+  }
+
+  &:active:not([disabled="true"]) {
+    background-color: rgba(var(--dubbed-input-rgb), 0.1) !important;
+  }
+}

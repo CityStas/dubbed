@@ -1,0 +1,135 @@
+/*
+ * Select trigger + option list.
+ *
+ *   trigger → 36px tall, 10px radius, hairline input border, translucent well,
+ *             16px muted chevron, soft focus ring
+ *   options → 8px radius rows, `accent` hover, selected row tinted with the
+ *             primary colour
+ */
+.dubbed-select {
+  --dubbed-helper-theme-rgb: var(--dubbed-foreground-rgb, 0, 0, 0);
+  --dubbed-helper-theme: rgb(var(--dubbed-helper-theme-rgb));
+  --dubbed-helper-safari1: var(--dubbed-input-color);
+  --dubbed-helper-safari2: var(--dubbed-input-color-hover);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(
+    --dubbed-font-family,
+    "Inter",
+    "Inter var",
+    "Geist",
+    "Segoe UI Variable Text",
+    "Segoe UI",
+    system-ui,
+    sans-serif
+  );
+  font-size: 13px;
+  font-weight: normal !important;
+  line-height: 1.5;
+  text-align: start;
+  color: var(--dubbed-helper-theme);
+  fill: var(--dubbed-helper-theme);
+
+  &-outer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--dubbed-space-2);
+    max-width: 120px;
+    width: 120px;
+    height: 36px;
+    padding: 0 var(--dubbed-space-2) 0 var(--dubbed-space-3) !important;
+    border: 1px solid var(--dubbed-helper-safari1) !important;
+    border-radius: var(--dubbed-radius-m) !important;
+    background-color: rgba(var(--dubbed-input-rgb), 0.045);
+    box-shadow: var(--dubbed-shadow-xs);
+    cursor: pointer;
+    transition:
+      border-color var(--dubbed-duration-fast) var(--dubbed-easing-standard),
+      background-color var(--dubbed-duration-fast) var(--dubbed-easing-standard),
+      box-shadow var(--dubbed-duration-fast) var(--dubbed-easing-standard) !important;
+
+    &:hover {
+      border-color: var(--dubbed-helper-safari2) !important;
+      background-color: rgba(var(--dubbed-input-rgb), 0.075);
+    }
+
+    &:focus-visible {
+      border-color: rgb(var(--dubbed-ring-rgb)) !important;
+      box-shadow: var(--dubbed-focus-ring) !important;
+    }
+
+    &[disabled="true"] {
+      opacity: 0.5;
+      cursor: default;
+
+      &:hover {
+        border-color: var(--dubbed-helper-safari1) !important;
+        background-color: rgba(var(--dubbed-input-rgb), 0.045);
+      }
+    }
+  }
+
+  &-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: inherit;
+    font-weight: 500 !important;
+    color: rgb(var(--dubbed-foreground-rgb));
+  }
+
+  &-arrow-icon {
+    width: 16px;
+    height: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: 0 0 auto;
+    opacity: 0.6;
+
+    & svg {
+      width: 16px;
+      height: 16px;
+      fill: rgb(var(--dubbed-muted-foreground-rgb));
+      stroke: inherit;
+    }
+  }
+
+  &-content-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    .dubbed-select-content-item {
+      padding: var(--dubbed-space-2) var(--dubbed-space-3) !important;
+      border-radius: var(--dubbed-radius-s) !important;
+      font-size: 13px;
+      cursor: pointer;
+      color: rgb(var(--dubbed-foreground-rgb));
+      transition: background-color var(--dubbed-duration-fast)
+        var(--dubbed-easing-standard);
+
+      &:not([inert]):hover {
+        background-color: rgb(var(--dubbed-accent-rgb));
+      }
+
+      &[data-dubbed-selected="true"] {
+        color: rgb(var(--dubbed-primary-rgb));
+        background-color: rgba(var(--dubbed-primary-rgb), 0.12);
+        font-weight: 500 !important;
+
+        &:hover {
+          background-color: rgba(var(--dubbed-primary-rgb), 0.18) !important;
+        }
+      }
+
+      &[inert] {
+        cursor: default;
+        color: rgba(var(--dubbed-muted-foreground-rgb), 1);
+        opacity: 0.6;
+      }
+    }
+  }
+}

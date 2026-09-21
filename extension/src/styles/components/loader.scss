@@ -1,0 +1,103 @@
+/*
+ * Loaders: an inline "dots" indicator, the toolbar spinner, and the circular
+ * progress ring.
+ */
+.dubbed-inline-loader {
+  height: 8px;
+  aspect-ratio: 5;
+  --dubbed-loader-bg: no-repeat
+    radial-gradient(
+      farthest-side,
+      rgb(var(--dubbed-muted-foreground-rgb)) 94%,
+      transparent
+    );
+  background:
+    var(--dubbed-loader-bg),
+    var(--dubbed-loader-bg),
+    var(--dubbed-loader-bg),
+    var(--dubbed-loader-bg);
+  background-size: 20% 100%;
+  animation:
+    dotsSlide 0.75s infinite alternate,
+    dotsFlip 1.5s infinite alternate;
+}
+
+.dubbed-translate-loader {
+  display: none;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  // Inherit the segment colour so the spinner stays high-contrast on the
+  // translucent toolbar and turns red together with the button on errors.
+  color: inherit;
+
+  &::after {
+    content: "";
+    box-sizing: border-box;
+    display: block;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    animation: dubbed-spin 0.7s linear infinite;
+  }
+}
+
+@keyframes dubbed-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.dubbed-loader-progress {
+  --dubbed-helper-theme: var(
+    --dubbed-theme-rgb,
+    var(--dubbed-primary-rgb, 33, 150, 243)
+  );
+  fill: none;
+  stroke: rgb(var(--dubbed-helper-theme));
+  stroke-width: 2;
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+}
+
+@keyframes dotsSlide {
+  0%,
+  10% {
+    background-position: 0 0, 0 0, 0 0, 0 0;
+  }
+  33% {
+    background-position:
+      0 0,
+      calc(100% / 3) 0,
+      calc(100% / 3) 0,
+      calc(100% / 3) 0;
+  }
+  66% {
+    background-position:
+      0 0,
+      calc(100% / 3) 0,
+      calc(2 * 100% / 3) 0,
+      calc(2 * 100% / 3) 0;
+  }
+  90%,
+  100% {
+    background-position: 0 0, calc(100% / 3) 0, calc(2 * 100% / 3) 0, 100% 0;
+  }
+}
+
+@keyframes dotsFlip {
+  0%,
+  49.99% {
+    transform: scale(1);
+  }
+  50%,
+  100% {
+    transform: scale(-1);
+  }
+}

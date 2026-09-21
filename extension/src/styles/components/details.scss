@@ -1,0 +1,62 @@
+/*
+ * Collapsible section header ("details" / accordion trigger).
+ *
+ *   14px medium label · 10px radius hover well · chevron rotates -90° → 0°
+ *
+ * The `padding: 0.5em` + `margin: -0.5em` pair keeps the original enlarged
+ * hit area without shifting the surrounding layout.
+ */
+.dubbed-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--dubbed-space-3);
+  color: rgb(var(--dubbed-foreground-rgb));
+  font-family: var(
+    --dubbed-font-family,
+    "Inter",
+    "Inter var",
+    "Geist",
+    "Segoe UI Variable Text",
+    "Segoe UI",
+    system-ui,
+    sans-serif
+  );
+  font-size: 14px;
+  font-weight: 500 !important;
+  letter-spacing: -0.011em;
+  border-radius: var(--dubbed-radius-m) !important;
+  padding: 0.5em !important;
+  margin: -0.5em !important;
+  line-height: 1.5;
+  text-align: start;
+  cursor: pointer;
+  transition: background var(--dubbed-duration-fast) var(--dubbed-easing-standard);
+
+  &-arrow-icon {
+    width: 18px;
+    height: 18px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: 0 0 auto;
+    transform: rotate(-90deg);
+    fill: rgb(var(--dubbed-muted-foreground-rgb));
+    transition: transform var(--dubbed-duration-medium) var(--dubbed-easing-standard);
+
+    & svg {
+      width: 18px;
+      height: 18px;
+      fill: inherit;
+    }
+  }
+
+  &:hover {
+    background: rgb(var(--dubbed-accent-rgb));
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--dubbed-focus-ring);
+  }
+}

@@ -1,0 +1,56 @@
+@use "./mixins" as button;
+
+/*
+ * Hotkey row + key pill.
+ *
+ * The pill follows shadcn's `kbd` anatomy: small, rounded, `bg-muted` with a
+ * hairline border and muted-foreground text — reads as a key cap rather than
+ * an outlined button.
+ */
+.dubbed-hotkey {
+  // Keep the action label and the assigned key visually connected.
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: var(--dubbed-space-3, 12px);
+  flex-wrap: wrap;
+
+  &-label {
+    max-width: 80%;
+    overflow-wrap: anywhere;
+  }
+}
+
+.dubbed-hotkey-button {
+  --dubbed-helper-theme: var(
+    --dubbed-theme-rgb,
+    var(--dubbed-primary-rgb, 33, 150, 243)
+  );
+  @include button.dubbed-button-base(
+    $radius: var(--dubbed-radius-s),
+    $padding: 2px var(--dubbed-space-2),
+    $min-width: 32px,
+    $height: fit-content,
+    $line-height: 1.5,
+    $font-size: 13px,
+    $font-weight: 500,
+    $margin: 0 !important
+  );
+  border: 1px solid var(--dubbed-input-color) !important;
+  width: fit-content;
+  color: rgb(var(--dubbed-muted-foreground-rgb)) !important;
+  background-color: rgb(var(--dubbed-muted-rgb)) !important;
+  @include button.dubbed-button-focus;
+  @include button.dubbed-button-disabled;
+
+  &:hover:not([disabled="true"]) {
+    border-color: var(--dubbed-input-color-hover) !important;
+    color: rgb(var(--dubbed-foreground-rgb)) !important;
+  }
+
+  &[data-status="active"] {
+    border-color: rgb(var(--dubbed-primary-rgb)) !important;
+    color: rgb(var(--dubbed-foreground-rgb)) !important;
+    box-shadow: var(--dubbed-focus-ring) !important;
+  }
+}

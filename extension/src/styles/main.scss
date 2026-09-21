@@ -1,0 +1,316 @@
+@use "components/buttons/contained.scss";
+@use "components/buttons/outlined.scss";
+@use "components/buttons/text.scss";
+@use "components/buttons/icon.scss";
+@use "components/buttons/hotkey.scss";
+
+@use "components/textfield.scss";
+@use "components/checkbox.scss";
+@use "components/slider.scss";
+@use "components/select.scss";
+@use "components/header.scss";
+@use "components/info.scss";
+@use "components/details.scss";
+@use "components/settings.scss";
+
+@use "components/lang-select.scss";
+@use "components/segmented-button.scss";
+@use "components/tooltip.scss";
+@use "components/menu.scss";
+@use "components/voice-popover.scss";
+@use "components/dialog.scss";
+@use "components/loader.scss";
+@use "components/label.scss";
+@use "components/account.scss";
+@use "subtitles.scss";
+
+/*
+ * ============================================================================
+ * Dubbed UI — design tokens
+ * ============================================================================
+ *
+ * "Soft-slate" visual language: a layered, near-black interface with hairlines,
+ * generous corner radii and a single light-on-dark accent for filled actions.
+ * Colour values are seeded from the shadcn/ui `zinc` dark palette (converted
+ * from oklch to sRGB triples so `rgb(var(--dubbed-*-rgb), alpha)` compositing
+ * keeps working in every browser without `color-mix()` / relative color
+ * syntax — and host pages cannot break our palette).
+ *
+ * Surface hierarchy (dark):
+ *   background #09090b  → dialog shell / page-level layer
+ *   card       #18181b  → settings sections, menus, popovers, toolbars
+ *   secondary  #27272a  → hover / active / selected fills, input wells
+ *   border     white/10 → hairlines
+ *   input      white/15 → form control borders
+ *   primary    #e4e4e7  → filled buttons (light-on-dark)
+ *
+ * Shape scale: 6 / 8 / 10 / 14 / 18 / pill — controls use 10px, cards 14px,
+ * the dialog 18px, and the floating toolbar is fully pill-shaped.
+ *
+ * Legacy names (`surface`, `onsurface`, `onprimary`) are kept as aliases so
+ * every component — including the ones that are not part of this restyle —
+ * keeps resolving the same variables.
+ *
+ * NOTE: Subtitle rendering & styling is out of scope for this sprint.
+ * Subtitle variables are pinned to their previous literal values below.
+ */
+:root {
+  --dubbed-font-family: var(
+    --dubbed-user-font-family,
+    "Inter", "Inter var", "Geist", "Segoe UI Variable Text", "Segoe UI",
+    system-ui, -apple-system, sans-serif
+  );
+  --dubbed-font-mono: var(
+    --dubbed-user-font-mono,
+    "JetBrains Mono", "Geist Mono", "Fira Code", "Cascadia Mono", ui-monospace,
+    "SF Mono", Consolas, monospace
+  );
+
+  /* ---- shadcn zinc — dark ------------------------------------------------ */
+  /*
+   * USER-OVERRIDE SLOTS — why every token reads `var(--dubbed-user-*, <default>)`
+   * instead of hard-coding its value.
+   *
+   * The UI lives in a Shadow DOM (`createShadowMount`), and `scopeCssForShadowRoots()`
+   * rewrites this `:root` block to `:host`. That makes the tokens *specified values on
+   * the host element*, which beats anything inherited from the page — so a Stylus /
+   * Stylish userstyle setting `--dubbed-primary-rgb` on `html` is silently ignored,
+   * and the overlay/portal hosts are nested a second shadow root deeper still.
+   *
+   * `--dubbed-user-*` is deliberately NEVER declared anywhere inside a shadow tree.
+   * An undeclared custom property simply inherits, and inheritance crosses shadow
+   * boundaries, so a userstyle can finally reach the UI:
+   *
+   *   :root { --dubbed-user-primary-rgb: 0, 255, 0; }
+   *
+   * Verified through two nesting levels by `dubbed-test/_stylus-contract.cjs`.
+   * Values must stay sRGB triplets ("R, G, B") — every consumer does
+   * `rgb(var(--dubbed-x-rgb), alpha)`. Removing a slot reverts to the default.
+   */
+  --dubbed-background-rgb: var(--dubbed-user-background-rgb, 9, 9, 11); /* oklch(0.141 0.005 285.823) */
+  --dubbed-foreground-rgb: var(--dubbed-user-foreground-rgb, 250, 250, 250); /* oklch(0.985 0 0) */
+
+  --dubbed-card-rgb: var(--dubbed-user-card-rgb, 24, 24, 27); /* oklch(0.21 0.006 285.885) */
+  --dubbed-card-foreground-rgb: var(--dubbed-user-card-foreground-rgb, 250, 250, 250);
+  --dubbed-popover-rgb: var(--dubbed-user-popover-rgb, 24, 24, 27); /* oklch(0.21 0.006 285.885) */
+  --dubbed-popover-foreground-rgb: var(--dubbed-user-popover-foreground-rgb, 250, 250, 250);
+
+  --dubbed-primary-rgb: var(--dubbed-user-primary-rgb, 228, 228, 231); /* oklch(0.92 0.004 286.32) */
+  --dubbed-primary-foreground-rgb: var(--dubbed-user-primary-foreground-rgb, 24, 24, 27); /* oklch(0.21 0.006 285.885) */
+
+  --dubbed-secondary-rgb: var(--dubbed-user-secondary-rgb, 39, 39, 42); /* oklch(0.274 0.006 286.033) */
+  --dubbed-secondary-foreground-rgb: var(--dubbed-user-secondary-foreground-rgb, 250, 250, 250);
+
+  --dubbed-muted-rgb: var(--dubbed-user-muted-rgb, 39, 39, 42); /* oklch(0.274 0.006 286.033) */
+  --dubbed-muted-foreground-rgb: var(--dubbed-user-muted-foreground-rgb, 159, 159, 169); /* oklch(0.705 0.015 286.067) */
+
+  --dubbed-accent-rgb: var(--dubbed-user-accent-rgb, 39, 39, 42); /* oklch(0.274 0.006 286.033) */
+  --dubbed-accent-foreground-rgb: var(--dubbed-user-accent-foreground-rgb, 250, 250, 250);
+
+  --dubbed-destructive-rgb: var(--dubbed-user-destructive-rgb, 255, 100, 103); /* oklch(0.704 0.191 22.216) */
+  --dubbed-destructive-foreground-rgb: var(--dubbed-user-destructive-foreground-rgb, 250, 250, 250);
+
+  --dubbed-border-rgb: var(--dubbed-user-border-rgb, 255, 255, 255); /* oklch(1 0 0 / 10%) */
+  --dubbed-input-rgb: var(--dubbed-user-input-rgb, 255, 255, 255); /* oklch(1 0 0 / 15%) */
+  --dubbed-ring-rgb: var(--dubbed-user-ring-rgb, 113, 113, 123); /* oklch(0.552 0.016 285.938) */
+
+  /* ---- Legacy aliases ---------------------------------------------------- */
+  /* `surface` = card layer (menus, popovers, toolbars). */
+  --dubbed-surface-rgb: var(--dubbed-card-rgb);
+  /* `onsurface` = foreground. */
+  --dubbed-onsurface-rgb: var(--dubbed-foreground-rgb);
+  /* `onprimary` = text on a filled (primary) surface. */
+  --dubbed-onprimary-rgb: var(--dubbed-primary-foreground-rgb);
+  /* `ondialog` = popover layer used by tooltips rendered over dialogs. */
+  --dubbed-ondialog-rgb: var(--dubbed-popover-rgb);
+  /* Legacy solid border triple (zinc-700) for `rgb(var(--dubbed-tooltip-border))`. */
+  --dubbed-tooltip-border: 63, 63, 70;
+
+  /* ---- Subtitle tokens (pinned, unchanged) ------------------------------- */
+  --dubbed-subtitles-color: rgb(var(--dubbed-onsurface-rgb, 227, 227, 227));
+  --dubbed-subtitles-passed-color: rgb(var(--dubbed-primary-rgb, 33, 150, 243));
+
+  /* ---- Spacing ----------------------------------------------------------- */
+  --dubbed-space-1: 4px;
+  --dubbed-space-2: 8px;
+  --dubbed-space-3: 12px;
+  --dubbed-space-4: 16px;
+  --dubbed-space-5: 20px;
+  --dubbed-space-6: 24px;
+
+  /* ---- Radius (soft-shape scale) ----------------------------------------- */
+  --dubbed-radius-xs: var(--dubbed-user-radius-xs, 6px);
+  --dubbed-radius-s: var(--dubbed-user-radius-s, 8px);
+  --dubbed-radius-m: var(--dubbed-user-radius-m, 10px); /* controls: buttons, inputs, selects */
+  --dubbed-radius-l: var(--dubbed-user-radius-l, 14px); /* cards, sections, menus, popovers */
+  --dubbed-radius-xl: var(--dubbed-user-radius-xl, 18px); /* dialog shell */
+  --dubbed-radius-pill: var(--dubbed-user-radius-pill, 999px); /* toolbar, chips, key caps */
+
+  /* ---- Borders ----------------------------------------------------------- */
+  --dubbed-border-color: rgba(var(--dubbed-border-rgb), 0.1);
+  --dubbed-border-color-hover: rgba(var(--dubbed-border-rgb), 0.2);
+  --dubbed-input-color: rgba(var(--dubbed-input-rgb), 0.15);
+  --dubbed-input-color-hover: rgba(var(--dubbed-input-rgb), 0.24);
+
+  /* ---- Elevation --------------------------------------------------------- */
+  /* shadcn relies on borders for separation; our UI floats over video, so the
+   * shadows stay layered but slightly stronger than Tailwind's defaults. */
+  --dubbed-shadow-1:
+    0 1px 2px rgba(0, 0, 0, 0.32), 0 4px 12px rgba(0, 0, 0, 0.22);
+  --dubbed-shadow-2:
+    0 2px 6px rgba(0, 0, 0, 0.4), 0 12px 36px rgba(0, 0, 0, 0.38);
+  --dubbed-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
+
+  /* ---- Motion ------------------------------------------------------------ */
+  --dubbed-duration-fast: 120ms;
+  --dubbed-duration-medium: 200ms;
+  --dubbed-duration-slow: 320ms;
+  --dubbed-easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ---- Focus ------------------------------------------------------------- */
+  /* shadcn: `ring-[3px] ring-ring/50` — a soft, offset-free halo. */
+  --dubbed-focus-ring-color: rgba(var(--dubbed-ring-rgb), 0.5);
+  --dubbed-focus-ring: 0 0 0 3px var(--dubbed-focus-ring-color);
+  --dubbed-focus-ring-offset: 0 0 0 0 transparent;
+}
+
+// ------------------------------
+// Global baseline for injected UI
+// ------------------------------
+
+// Avoid host-page box-sizing and typography resets from affecting our components.
+dubbed-block,
+dubbed-block * {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+// Enforce hidden attribute behavior inside the injected UI tree.
+// Keep opt-out classes for components that use custom hidden animations.
+dubbed-block[hidden]:not(.dubbed-menu):not(.dubbed-dialog-container),
+dubbed-block [hidden]:not(.dubbed-menu):not(.dubbed-dialog-container) {
+  display: none !important;
+}
+
+// Use a stable typography baseline for all Dubbed UI.
+dubbed-block {
+  --dubbed-font-family:
+    "Inter", "Inter var", "Geist", "Segoe UI Variable Text", "Segoe UI",
+    system-ui, -apple-system, sans-serif !important;
+  font-family: var(
+    --dubbed-font-family,
+    "Inter",
+    "Inter var",
+    "Geist",
+    "Segoe UI Variable Text",
+    "Segoe UI",
+    system-ui,
+    sans-serif
+  ) !important;
+  font-weight: 400 !important;
+  letter-spacing: -0.011em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  display: block;
+  // for reddit
+  visibility: visible !important;
+}
+
+// Keep host-page typography rules from overriding Dubbed font weights.
+dubbed-block * {
+  font-weight: inherit !important;
+}
+
+// Create an explicit stacking / blending boundary for overlays.
+.dubbed-portal-local,
+.dubbed-subtitles-widget {
+  isolation: isolate;
+}
+
+// ------------------------------
+// Focus handling & interaction polish
+// ------------------------------
+//
+// Requirements:
+// - No "halo" focus outlines for pointer interactions (mouse/touch).
+// - Keep a visible focus ring for keyboard navigation (Tab) for accessibility.
+//
+// JS toggles `html.dubbed-keyboard-nav` only when the user presses Tab.
+// See `src/ui.ts`.
+
+// Default: suppress native focus outlines/halos.
+// (We will re-introduce an explicit ring only for keyboard navigation below.)
+dubbed-block:focus,
+dubbed-block *:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+// Keyboard navigation: show a consistent focus ring.
+html.dubbed-keyboard-nav dubbed-block:focus-visible,
+html.dubbed-keyboard-nav dubbed-block *:focus-visible {
+  box-shadow: var(--dubbed-focus-ring) !important;
+}
+
+// Fallback for browsers without `:focus-visible` support.
+@supports not selector(:focus-visible) {
+  html.dubbed-keyboard-nav dubbed-block:focus,
+  html.dubbed-keyboard-nav dubbed-block *:focus {
+    box-shadow: var(--dubbed-focus-ring) !important;
+  }
+}
+
+// Respect reduced-motion preference globally.
+@media (prefers-reduced-motion: reduce) {
+  .dubbed-portal-local *,
+  .dubbed-portal *,
+  .dubbed-subtitles-widget * {
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.dubbed-portal {
+  display: contents;
+
+  &-local {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 2147483647;
+  }
+}
+
+// The overlay mount itself stays click-through so host-page controls remain
+// usable around the injected UI. Explicitly re-enable hit-testing for the
+// actual interactive overlay surfaces inside the shadow root.
+.dubbed-segmented-button,
+.dubbed-menu {
+  pointer-events: auto;
+}
+
+// Instruction text lines shown inside the "How to use?" dialog.
+.dubbed-howto-line {
+  font-size: 13px;
+  line-height: 1.55;
+  color: rgba(var(--dubbed-muted-foreground-rgb), 1);
+  margin-bottom: var(--dubbed-space-1);
+}
+
+// Compact "About" info rows (version / author) at the bottom of settings.
+.dubbed-about {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+// "IMPORTANT" note line inside the "How to use?" dialog.
+.dubbed-howto-note {
+  font-weight: 600 !important;
+  color: rgb(var(--dubbed-foreground-rgb));
+}

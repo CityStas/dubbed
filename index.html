@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DUBBED - быстрый перевод и озвучка видео в браузере</title>
+<meta name="description" content="Бесплатное расширение для Chrome и Firefox. Быстрая AI-озвучка фильмов и сериалов прямо в браузере - HDrezka, VK, Telegram, YouTube и другие." />
+<link rel="icon" href="assets/dubbed-128.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --background:#0A0A0A;
+    --background-secondary:#111111;
+    --accent:#CCFF00;
+    --accent-hover:#B8E600;
+    --text:#F5F5F5;
+    --text-heading:#FFFFFF;
+    --text-muted:#999999;
+    --border:#333333;
+    --border-light:#444444;
+    --card:#1A1A1A;
+    --card-hover:#222222;
+    --cyan:#00D4FF;
+    --font-display:'Outfit',system-ui,-apple-system,'Segoe UI',sans-serif;
+    --font-body:'DM Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+  body{
+    background:var(--background);color:var(--text);
+    font-family:var(--font-body);line-height:1.6;overflow-x:hidden;
+  }
+  h1,h2,h3{font-family:var(--font-display);color:var(--text-heading);line-height:1.1;letter-spacing:-.02em}
+  a{text-decoration:none;color:inherit}
+  ::selection{background:var(--accent);color:var(--background)}
+  ::-webkit-scrollbar{width:8px}
+  ::-webkit-scrollbar-track{background:var(--background)}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+  ::-webkit-scrollbar-thumb:hover{background:var(--border-light)}
+
+  .wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+  .text-gradient{background:linear-gradient(135deg,var(--accent) 0%,var(--cyan) 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .glow{box-shadow:0 0 24px rgba(204,255,0,.28),0 0 56px rgba(204,255,0,.10)}
+  .glow:hover{box-shadow:0 0 34px rgba(204,255,0,.5),0 0 70px rgba(204,255,0,.18)}
+
+  /* ---------- NAV ---------- */
+  header{
+    position:fixed;top:0;left:0;right:0;z-index:40;
+    transition:background .3s,border-color .3s,backdrop-filter .3s;
+    border-bottom:1px solid transparent;
+  }
+  header.scrolled{background:rgba(26,26,26,.8);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom-color:var(--border)}
+  .nav{display:flex;align-items:center;justify-content:space-between;height:64px}
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-weight:800;font-size:20px;letter-spacing:-.01em;color:var(--text-heading)}
+  .brand svg{display:block}
+  .nav-links{display:flex;align-items:center;gap:32px}
+  .nav-links a{font-size:14px;color:var(--text-muted);transition:color .2s}
+  .nav-links a:hover{color:var(--text-heading)}
+  .nav-toggle{display:none;background:none;border:0;color:var(--text-muted);cursor:pointer;padding:8px}
+
+  /* ---------- HERO ---------- */
+  .hero{position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden;padding:120px 0 80px}
+  .hero .aurora{position:absolute;inset:0;background:
+    radial-gradient(ellipse 80% 50% at 50% -20%,rgba(204,255,0,.15),transparent),
+    radial-gradient(ellipse 60% 40% at 80% 50%,rgba(0,212,255,.10),transparent),
+    radial-gradient(ellipse 50% 30% at 20% 80%,rgba(204,255,0,.08),transparent)}
+  .hero .grid{position:absolute;inset:0;opacity:.2;
+    background-image:radial-gradient(circle at 1px 1px,rgba(255,255,255,.05) 1px,transparent 0);background-size:40px 40px}
+  .hero .inner{position:relative;z-index:2;width:100%}
+  .badge{display:inline-flex;align-items:center;gap:8px;padding:7px 16px;border-radius:999px;border:1px solid var(--border);background:var(--card);font-size:13px;color:var(--text-muted);margin-bottom:28px}
+  .badge .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent)}
+  .hero h1{font-size:clamp(38px,7vw,72px);font-weight:800}
+  .hero .sub{margin:22px auto 0;max-width:560px;font-size:clamp(15px,1.6vw,19px);color:var(--text-muted)}
+
+  .downloads{margin-top:44px;display:flex;flex-wrap:wrap;gap:16px;justify-content:center}
+  .dl{
+    display:inline-flex;align-items:center;gap:14px;
+    padding:16px 28px;border-radius:999px;
+    font-family:var(--font-display);font-weight:600;font-size:16px;
+    transition:transform .18s,background .18s,border-color .18s,color .18s,box-shadow .18s;
+    will-change:transform;
+  }
+  .dl:hover{transform:translateY(-2px)}
+  .dl:active{transform:translateY(0) scale(.99)}
+  .dl img{width:26px;height:26px;flex:none}
+  .dl .txt{display:flex;flex-direction:column;line-height:1.15;text-align:left}
+  .dl .txt small{font-family:var(--font-body);font-weight:400;font-size:12px;opacity:.7}
+  .dl-chrome{background:var(--accent);color:var(--background)}
+  .dl-chrome:hover{background:var(--accent-hover)}
+  .dl-firefox{border:1px solid var(--border);color:var(--text-heading)}
+  .dl-firefox:hover{border-color:var(--accent);color:var(--accent)}
+
+  .free-note{margin-top:20px;font-size:13px;color:var(--text-muted)}
+  .free-note b{color:var(--text-heading);font-weight:600}
+
+  /* ---------- MARQUEE ---------- */
+  .marquee{--marquee-duration:60s;margin-top:64px;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
+  .marquee .track{display:flex;width:max-content;animation:marquee var(--marquee-duration) linear infinite}
+  .marquee:hover .track{animation-play-state:paused}
+  .marquee span{white-space:nowrap;margin-right:14px;padding:7px 16px;border:1px solid var(--border);border-radius:999px;font-size:13px;color:var(--text-muted);background:var(--background-secondary)}
+  @keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+  /* ---------- SECTIONS ---------- */
+  section.block{padding:88px 0;border-top:1px solid var(--border)}
+  .kicker{font-family:var(--font-display);font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+  .block h2{margin-top:12px;font-size:clamp(26px,3.4vw,38px);font-weight:700}
+  .block .lead{margin-top:12px;max-width:560px;color:var(--text-muted);font-size:16px}
+
+  .cards{margin-top:44px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:26px;transition:background .2s,border-color .2s,transform .2s}
+  .card:hover{background:var(--card-hover);border-color:var(--border-light);transform:translateY(-2px)}
+  .card .ico{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(204,255,0,.10);color:var(--accent);margin-bottom:18px}
+  .card h3{font-size:18px;font-weight:600}
+  .card p{margin-top:8px;font-size:14px;color:var(--text-muted)}
+
+  .sites{margin-top:36px;display:flex;flex-wrap:wrap;gap:10px}
+  .sites span{padding:8px 16px;border:1px solid var(--border);border-radius:999px;font-size:14px;color:var(--text);background:var(--background-secondary)}
+  .sites span.hot{border-color:rgba(204,255,0,.5);color:var(--accent);background:rgba(204,255,0,.07)}
+
+  .steps{margin-top:44px;display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .step-box{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:26px}
+  .step-box .hd{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-weight:600;font-size:16px;color:var(--text-heading)}
+  .step-box .hd img{width:24px;height:24px}
+  .step-box ol{margin:18px 0 0;padding-left:18px;color:var(--text-muted);font-size:14px}
+  .step-box ol li{margin-bottom:8px}
+  .step-box ol li b{color:var(--text);font-weight:600}
+  .step-box .dl-link{display:inline-block;margin-top:16px;font-size:13px;color:var(--accent);border-bottom:1px solid transparent}
+  .step-box .dl-link:hover{border-bottom-color:var(--accent)}
+
+  /* ---------- FOOTER ---------- */
+  footer{border-top:1px solid var(--border);background:var(--background-secondary);padding:36px 0}
+  .foot{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .foot .brand{font-size:17px}
+  .foot p{font-size:13px;color:var(--text-muted)}
+
+  /* grain */
+  .grain::after{content:'';position:absolute;inset:0;pointer-events:none;opacity:.03;z-index:1;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+  @media (max-width:720px){
+    .nav-links{display:none}
+    .nav-toggle{display:block}
+    header.open .nav-links{
+      display:flex;position:absolute;top:64px;left:0;right:0;flex-direction:column;gap:0;
+      background:rgba(17,17,17,.98);border-bottom:1px solid var(--border);padding:8px 0;
+    }
+    header.open .nav-links a{padding:14px 24px;font-size:16px;width:100%}
+    .downloads{flex-direction:column;align-items:stretch}
+    .dl{justify-content:center}
+    .steps{grid-template-columns:1fr}
+    .foot{flex-direction:column;align-items:flex-start}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+    /* бегущая строка — декоративная; движение сохраняем по требованию владельца сайта.
+       Убрать эту строку — и при системном "уменьшении анимации" строка встанет. */
+    .marquee .track{animation:marquee var(--marquee-duration) linear infinite!important}
+  }
+</style>
+</head>
+<body>
+
+<header id="header">
+  <div class="wrap nav">
+    <a href="#" class="brand">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M2 12h2.4l1.2-5 1.7 10 1.8-14 1.9 18 1.8-13 1.6 8 1.4-5 1.3 3.5 1-2 1.6 1h1.6" stroke="#CCFF00" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      DUBBED
+    </a>
+    <nav class="nav-links">
+      <a href="#features">Возможности</a>
+      <a href="#sites">Где работает</a>
+      <a href="#install">Установка</a>
+    </nav>
+    <button class="nav-toggle" id="navToggle" aria-label="Меню">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+  </div>
+</header>
+
+<main>
+  <!-- HERO -->
+  <section class="hero grain">
+    <div class="aurora"></div>
+    <div class="grid"></div>
+    <div class="wrap inner">
+      <span class="badge"><span class="dot"></span> Расширение для Chrome и Firefox</span>
+      <h1>Смотри любое видео<br><span class="text-gradient">на русском.</span></h1>
+      <p class="sub">Быстрая AI-озвучка фильмов, сериалов и роликов прямо в браузере. HDrezka, VK, Telegram, YouTube, RuTube и не только.</p>
+
+      <div class="downloads">
+        <a class="dl dl-chrome glow" href="downloads/dubbed-chrome.zip" download>
+          <img src="assets/chrome.svg" alt="Chrome" />
+          <span class="txt">Скачать для Chrome<small>файл .zip</small></span>
+        </a>
+        <a class="dl dl-firefox" href="downloads/dubbed-firefox.xpi" download>
+          <img src="assets/firefox.svg" alt="Firefox" />
+          <span class="txt">Скачать для Firefox<small>файл .xpi</small></span>
+        </a>
+      </div>
+
+      <p class="free-note"><b>Бесплатно.</b> Без регистрации и подписок.</p>
+
+      <div class="marquee" aria-hidden="true">
+        <div class="track">
+          <span>HDrezka</span><span>YouTube</span><span>VK Видео</span><span>Telegram</span><span>Rutube</span><span>Twitch</span><span>Vimeo</span><span>Dzen</span><span>Kinogo</span><span>OK.ru</span><span>TikTok</span><span>Vimeo</span>
+          <span>HDrezka</span><span>YouTube</span><span>VK Видео</span><span>Telegram</span><span>Rutube</span><span>Twitch</span><span>Vimeo</span><span>Dzen</span><span>Kinogo</span><span>OK.ru</span><span>TikTok</span><span>Vimeo</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="block" id="features">
+    <div class="wrap">
+      <span class="kicker">Возможности</span>
+      <h2>Озвучка вместо субтитров</h2>
+      <p class="lead">Голос за кадром накладывается поверх оригинала - дождитесь загрузки и наслаждайтесь просмотром.</p>
+
+      <div class="cards">
+        <div class="card">
+          <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+          <h3>Быстро на HDrezka</h3>
+          <p>Вышел фильм или документалка без перевода? С расширением они начинают звучать по-русски за пару минут!</p>
+        </div>
+        <div class="card">
+          <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 0 20 15.3 15.3 0 0 1 0-20z"/></svg></div>
+          <h3>Везде, где есть видео</h3>
+          <p>VK, Telegram, YouTube, Rutube, Twitch, Vimeo и десятки других сайтов.</p>
+        </div>
+        <div class="card">
+          <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18v4M8 22h8"/></svg></div>
+          <h3>Максимально живой голос</h3>
+          <p>AI-озвучка с сохранением тайминга - без «робота» и рассинхрона.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SITES -->
+  <section class="block" id="sites">
+    <div class="wrap">
+      <span class="kicker">Где работает</span>
+      <h2>Большинство сайтов с видео</h2>
+      <p class="lead">Расширение само находит плеер на странице и подключает перевод.</p>
+      <div class="sites">
+        <span class="hot">HDrezka</span>
+        <span>YouTube</span>
+        <span>VK Видео</span>
+        <span>Telegram Web</span>
+        <span>Rutube</span>
+        <span>Twitch</span>
+        <span>Vimeo</span>
+        <span>Dzen</span>
+        <span>Kinogo</span>
+        <span>OK.ru</span>
+        <span>TikTok</span>
+        <span>Mail.ru</span>
+        <span>Dailymotion</span>
+        <span>Bilibili</span>
+        <span>Reddit</span>
+        <span>LinkedIn</span>
+        <span>Coursera</span>
+        <span>Udemy</span>
+        <span>+ любые .mp4 / .webm</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- INSTALL -->
+  <section class="block" id="install">
+    <div class="wrap">
+      <span class="kicker">Установка</span>
+      <h2>Одна минута</h2>
+      <p class="lead">Расширение бесплатное. Устанавливается вручную из скачанного файла.</p>
+
+      <div class="steps">
+        <div class="step-box">
+          <div class="hd"><img src="assets/chrome.svg" alt="" /> Chrome / Edge / Яндекс.Браузер</div>
+          <ol>
+            <li>Скачай <b>.zip</b> и распакуй в любую папку.</li>
+            <li>Открой <b>chrome://extensions</b> и включи «Режим разработчика».</li>
+            <li>Нажми <b>«Загрузить распакованное расширение»</b> и выбери папку.</li>
+          </ol>
+          <a class="dl-link" href="downloads/dubbed-chrome.zip" download>Скачать .zip →</a>
+        </div>
+        <div class="step-box">
+          <div class="hd"><img src="assets/firefox.svg" alt="" /> Firefox</div>
+          <ol>
+            <li>Скачай <b>.xpi</b>.</li>
+            <li>Открой <b>about:addons</b> → шестерёнка → <b>«Установить из файла»</b>.</li>
+            <li>Выбери скачанный <b>.xpi</b> и подтверди.</li>
+          </ol>
+          <a class="dl-link" href="downloads/dubbed-firefox.xpi" download>Скачать .xpi →</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <a href="#" class="brand">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M2 12h2.4l1.2-5 1.7 10 1.8-14 1.9 18 1.8-13 1.6 8 1.4-5 1.3 3.5 1-2 1.6 1h1.6" stroke="#CCFF00" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      DUBBED
+    </a>
+    <p>Перевод и озвучка видео в браузере. Бесплатно.</p>
+    <p>© 2026 DUBBED | Автор: CITYSTAS</p>
+  </div>
+</footer>
+
+<script>
+  const header = document.getElementById('header');
+  const toggle = document.getElementById('navToggle');
+  const onScroll = () => header.classList.toggle('scrolled', window.scrollY > 50);
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  toggle.addEventListener('click', () => header.classList.toggle('open'));
+  document.querySelectorAll('.nav-links a').forEach(a =>
+    a.addEventListener('click', () => header.classList.remove('open'))
+  );
+</script>
+</body>
+</html>

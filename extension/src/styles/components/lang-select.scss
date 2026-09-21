@@ -1,0 +1,30 @@
+/*
+ * Language switcher (icon + select) used in the quick menu.
+ */
+.dubbed-lang-select {
+  --dubbed-helper-theme-rgb: var(--dubbed-foreground-rgb, 0, 0, 0);
+  --dubbed-helper-theme: rgb(var(--dubbed-helper-theme-rgb));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dubbed-space-2);
+  color: var(--dubbed-helper-theme);
+  fill: var(--dubbed-helper-theme);
+
+  &-icon {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: 0 0 auto;
+    opacity: 0.7;
+
+    & svg {
+      width: 20px;
+      height: 20px;
+      fill: rgb(var(--dubbed-muted-foreground-rgb));
+      stroke: inherit;
+    }
+  }
+}

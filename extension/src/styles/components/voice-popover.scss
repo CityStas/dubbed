@@ -1,0 +1,258 @@
+@use "../mixins" as shared;
+
+/*
+ * Voice (audio track) popover, anchored to the translate segment.
+ *
+ * 14px radius · `card` surface · hairline border · accent hover rows ·
+ * primary-tinted active row (live rows keep their magenta identity colour).
+ */
+.dubbed-voice-icon {
+  display: block;
+  overflow: visible;
+
+  .dubbed-eq-bar {
+    transform-origin: 50% 100%;
+    transform-box: fill-box;
+    transform: scaleY(1);
+  }
+
+  &--standard .dubbed-eq-bar {
+    fill: rgba(var(--dubbed-muted-foreground-rgb), 0.5);
+  }
+
+  &--live .dubbed-eq-bar {
+    fill: #e040a0;
+  }
+}
+
+.dubbed-voice-popover {
+  --dubbed-helper-surface-rgb: var(--dubbed-card-rgb, 32, 33, 36);
+  --dubbed-helper-surface: rgb(var(--dubbed-helper-surface-rgb));
+  --dubbed-helper-onsurface-rgb: var(--dubbed-foreground-rgb, 227, 227, 227);
+  --dubbed-helper-onsurface: rgb(var(--dubbed-helper-onsurface-rgb));
+  --dubbed-helper-onsurface-secondary: rgb(var(--dubbed-muted-foreground-rgb));
+
+  --dubbed-voice-active-standard-bg: rgba(var(--dubbed-primary-rgb), 0.12);
+  --dubbed-voice-active-standard-fg: rgb(var(--dubbed-primary-rgb));
+  --dubbed-voice-active-live-bg: rgba(224, 64, 160, 0.14);
+  --dubbed-voice-active-live-fg: #e040a0;
+
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2147483647;
+  display: block;
+  background: var(--dubbed-helper-surface);
+  border: 1px solid var(--dubbed-border-color) !important;
+  border-radius: var(--dubbed-radius-l) !important;
+  box-shadow: var(--dubbed-shadow-2) !important;
+  overflow: hidden;
+  min-width: 230px;
+  max-width: var(--dubbed-voice-popover-max-width, 310px);
+  max-height: var(--dubbed-voice-popover-max-height, calc(100vh - 16px));
+  width: max-content;
+  cursor: default;
+  user-select: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  transform-origin: top left;
+  @include shared.dubbed-font-family;
+  text-align: left !important;
+
+  &,
+  & * {
+    box-sizing: border-box !important;
+  }
+
+  opacity: 0;
+  transform: none;
+  visibility: hidden;
+  pointer-events: none;
+  transition: none;
+
+  &[hidden] {
+    display: none !important;
+  }
+
+  &:not([hidden]),
+  &.is-open,
+  &[aria-hidden="false"] {
+    opacity: 1;
+    transform: none;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  &[data-placement="top"] {
+    transform-origin: bottom center;
+  }
+
+  &[data-placement="bottom"] {
+    transform-origin: top center;
+  }
+
+  &[data-placement="left"] {
+    transform-origin: right center;
+  }
+
+  &[data-placement="right"] {
+    transform-origin: left center;
+  }
+
+  &.is-closing {
+    opacity: 0;
+    transform: none;
+    visibility: visible;
+    pointer-events: none;
+  }
+
+  &__item {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    gap: var(--dubbed-space-3);
+    padding: 12px 40px 12px 14px !important;
+    min-height: 58px;
+    cursor: pointer;
+    color: rgb(var(--dubbed-foreground-rgb));
+    outline: none;
+    transition: background-color var(--dubbed-duration-fast)
+      var(--dubbed-easing-standard);
+
+    &::before {
+      content: none !important;
+      display: none !important;
+    }
+
+    &:hover,
+    &:focus-visible {
+      background-color: rgb(var(--dubbed-accent-rgb));
+      box-shadow: none;
+    }
+
+    &:focus-visible {
+      box-shadow: inset 0 0 0 2px var(--dubbed-focus-ring-color);
+    }
+
+    // Selected check mark (masked glyph, right-aligned).
+    &::after {
+      content: "";
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      width: 18px;
+      height: 18px;
+      opacity: 0;
+      transform: translateY(-50%) scale(0.88);
+      transition:
+        opacity var(--dubbed-duration-fast) var(--dubbed-easing-standard),
+        transform var(--dubbed-duration-fast) var(--dubbed-easing-standard);
+      background-color: currentColor;
+      -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E")
+        center / contain no-repeat;
+      mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E")
+        center / contain no-repeat;
+    }
+
+    &--active {
+      font-weight: 500 !important;
+
+      &::after {
+        opacity: 1;
+        transform: translateY(-50%) scale(1);
+      }
+    }
+  }
+
+  &__item[data-voice="standard"].dubbed-voice-popover__item--active {
+    background-color: var(--dubbed-voice-active-standard-bg);
+    color: var(--dubbed-voice-active-standard-fg);
+
+    .dubbed-voice-popover__item-title {
+      color: inherit;
+    }
+
+    .dubbed-voice-icon--standard .dubbed-eq-bar {
+      fill: currentColor;
+    }
+  }
+
+  &__item[data-voice="live"].dubbed-voice-popover__item--active {
+    background-color: var(--dubbed-voice-active-live-bg);
+    color: var(--dubbed-voice-active-live-fg);
+
+    .dubbed-voice-popover__item-title {
+      color: inherit;
+    }
+  }
+
+  &__item-icon {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+
+    svg {
+      width: 20px;
+      height: 20px;
+      display: block;
+    }
+  }
+
+  &__item-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  &__item-title {
+    font-size: 14px;
+    font-weight: 500 !important;
+    line-height: 1.3;
+    color: inherit;
+    white-space: nowrap;
+  }
+
+  &__item-subtitle {
+    font-size: 12px;
+    line-height: 1.4;
+    color: rgb(var(--dubbed-muted-foreground-rgb));
+    white-space: normal;
+  }
+
+  &__divider {
+    height: 1px;
+    background: var(--dubbed-border-color);
+    margin: 0 !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dubbed-voice-icon .dubbed-eq-bar {
+    animation: none !important;
+    transform: scaleY(1) !important;
+  }
+
+  .dubbed-voice-popover,
+  .dubbed-voice-popover *,
+  .dubbed-voice-popover::before,
+  .dubbed-voice-popover::after {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .dubbed-voice-popover {
+    transform: none !important;
+  }
+
+  .dubbed-voice-popover.is-closing,
+  .dubbed-voice-popover:not([hidden]),
+  .dubbed-voice-popover.is-open,
+  .dubbed-voice-popover[aria-hidden="false"] {
+    transform: none !important;
+  }
+}

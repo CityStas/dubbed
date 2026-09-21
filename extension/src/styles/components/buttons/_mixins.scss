@@ -1,0 +1,142 @@
+@use "../../mixins" as shared;
+
+/*
+ * Shared button primitives.
+ *
+ * Geometry and interaction model follow shadcn/ui:
+ *   - 36px tall (h-9), 14px text, font-weight 500, 8px radius
+ *   - `inline-flex` + centered content, 8px gap for icon+label pairs
+ *   - flat `background-color` / `border-color` transitions (no ripple layers)
+ *   - soft 3px focus ring (`ring-[3px] ring-ring/50`)
+ *
+ * `dubbed-button-layers*` mixins are kept for backwards compatibility with
+ * components that still compose the old Material ripple layers.
+ */
+@mixin dubbed-button-base(
+  $radius,
+  $padding,
+  $min-width,
+  $height,
+  $line-height,
+  $font-size: 14px,
+  $font-weight: 500,
+  $margin: null
+) {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--dubbed-space-2);
+  box-sizing: border-box;
+
+  @if $margin != null {
+    margin: $margin;
+  }
+
+  border-radius: $radius !important;
+  padding: $padding !important;
+  min-width: $min-width;
+  height: $height;
+  vertical-align: middle;
+  text-align: center;
+  white-space: nowrap;
+  @include shared.dubbed-font-family;
+  font-size: $font-size;
+  font-weight: $font-weight !important;
+  line-height: $line-height;
+  outline: none;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background-color var(--dubbed-duration-fast) var(--dubbed-easing-standard),
+    border-color var(--dubbed-duration-fast) var(--dubbed-easing-standard),
+    color var(--dubbed-duration-fast) var(--dubbed-easing-standard),
+    box-shadow var(--dubbed-duration-fast) var(--dubbed-easing-standard);
+
+  & > svg {
+    pointer-events: none;
+    flex-shrink: 0;
+  }
+}
+
+/*
+ * shadcn focus treatment: `focus-visible:border-ring focus-visible:ring-[3px]`.
+ * Applied by the variant mixins so it stays consistent across button types.
+ */
+@mixin dubbed-button-focus {
+  &:focus-visible {
+    box-shadow: var(--dubbed-focus-ring) !important;
+  }
+
+  @supports not selector(:focus-visible) {
+    &:focus {
+      box-shadow: var(--dubbed-focus-ring) !important;
+    }
+  }
+}
+
+/*
+ * Disabled state: `disabled:pointer-events-none disabled:opacity-50`
+ * (kept as the custom `[disabled="true"]` attribute the components use).
+ */
+@mixin dubbed-button-disabled {
+  &[disabled="true"] {
+    pointer-events: none !important;
+    opacity: 0.5 !important;
+    box-shadow: none !important;
+    cursor: default !important;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Legacy Material ripple layers (retained for backwards compatibility)
+// ---------------------------------------------------------------------------
+
+@mixin dubbed-button-layers($before-color) {
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    border-radius: inherit !important;
+    inset: 0;
+    opacity: 0;
+  }
+
+  &::before {
+    background-color: $before-color;
+    transition: opacity var(--dubbed-duration-medium) var(--dubbed-easing-standard);
+  }
+
+  &::after {
+    background: radial-gradient(
+        circle at center,
+        currentColor 1%,
+        transparent 1%
+      )
+      center / 10000% 10000% no-repeat;
+    transition:
+      opacity var(--dubbed-duration-slow) var(--dubbed-easing-standard),
+      background-size var(--dubbed-duration-slow) var(--dubbed-easing-standard);
+  }
+}
+
+@mixin dubbed-button-layer-hover($opacity) {
+  &:hover::before {
+    opacity: $opacity;
+  }
+}
+
+@mixin dubbed-button-layer-active($opacity) {
+  &:active::after {
+    opacity: $opacity;
+    background-size: 100% 100%;
+    transition: background-size 0s;
+  }
+}
+
+@mixin dubbed-button-layer-reset-disabled {
+  &::before,
+  &::after {
+    opacity: 0;
+  }
+}

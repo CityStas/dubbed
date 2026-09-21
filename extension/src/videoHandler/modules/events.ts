@@ -1,0 +1,622 @@
+import YoutubeHelper from "@vot.js/ext/helpers/youtube";
+import { getVideoID } from "@vot.js/ext/utils/videoData";
+import { availableLangs } from "@vot.js/shared/consts";
+import type { RequestLang } from "@vot.js/shared/types/data";
+import { defaultAutoHideDelay } from "../../config/config";
+import {
+  isDesktopYouTubeLikeSite,
+  isMuteSyncDisabledHost,
+  isYouTubeLikeHost,
+} from "../../core/hostPolicies";
+import { resetAndHideLifecycle } from "../../core/lifecycleShared";
+import { getPlatformEventConfig } from "../../core/platformEvents";
+import debug from "../../utils/debug";
+import { containsCrossShadow, getDeepActiveElement } from "../../utils/dom";
+import { GM_fetch } from "../../utils/gm";
+import { isIframe } from "../../utils/iframeConnector";
+import { clampPercentInt } from "../../utils/volume";
+import type { VideoHandler } from "../../VideoHandler";
+import { handlePlaybackResumedTranslationRefresh } from "./translation";
+
+type ScopedAddListener = (
+  element: EventTarget,
+  event: string,
+  handler: EventListenerOrEventListenerObject,
+  options?: AddEventListenerOptions,
+) => void;
+type ScopedAddListeners = (
+  element: EventTarget,
+  events: Iterable<string>,
+  handler: EventListenerOrEventListenerObject,
+  options?: AddEventListenerOptions,
+) => void;
+type ExtraEventsContext = {
+  self: VideoHandler;
+  overlayView: NonNullable<VideoHandler["uiManager"]["dubbedOverlayView"]>;
+  platformConfig: ReturnType<typeof getPlatformEventConfig>;
+  add: ScopedAddListener;
+  addMany: ScopedAddListeners;
+};
+
+function mergeListenerSignals(
+  primary: AbortSignal,
+  secondary?: AbortSignal,
+): AbortSignal {
+  if (!secondary || secondary === primary) return primary;
+  const signals = [primary, secondary];
+  if (typeof AbortSignal.any === "function") return AbortSignal.any(signals);
+
+  const controller = new AbortController();
+  for (const signal of signals) {
+    const abort = () => controller.abort(signal.reason);
+    if (signal.aborted) {
+      abort();
+      break;
+    }
+    signal.addEventListener("abort", abort, {
+      once: true,
+      signal: controller.signal,
+    });
+  }
+  return controller.signal;
+}
+
+function createScopedListeners(signal: AbortSignal): {
+  add: ScopedAddListener;
+  addMany: ScopedAddListeners;
+} {
+  const add: ScopedAddListener = (element, event, handler, options) => {
+    element.addEventListener(event, handler, {
+      ...options,
+      signal: mergeListenerSignals(signal, options?.signal),
+    });
+  };
+  const addMany: ScopedAddListeners = (element, events, handler, options) => {
+    for (const event of events) {
+      add(element, event, handler, options);
+    }
+  };
+  return { add, addMany };
+}
+function bindOverlayHoverFocusEvents(
+  addMany: ScopedAddListeners,
+  target: EventTarget,
+  overlayVisibility: NonNullable<VideoHandler["overlayVisibility"]>,
+): void {
+  const handleInteraction = (event: Event) =>
+    overlayVisibility.handleOverlayInteraction(event);
+  const scheduleHide = (event: Event) => overlayVisibility.scheduleHide(event);
+
+  if (isIframe() && globalThis.window !== undefined) {
+    addMany(target, ["focusin"], handleInteraction);
+    addMany(target, ["focusout"], scheduleHide);
+    return;
+  }
+
+  addMany(target, ["focusin", "pointerenter"], handleInteraction);
+  addMany(target, ["pointermove"], handleInteraction, { passive: true });
+  addMany(target, ["focusout", "pointerleave"], scheduleHide);
+}
+
+function toPercentInt(value: unknown, fallback = 0): number {
+  const numeric = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(numeric) ? clampPercentInt(numeric) : fallback;
+}
+function syncAudioTranslationVolumeFromVideo(
+  self: VideoHandler,
+  videoPercent: number,
+  options: {
+    skipYouTubeLikeHosts?: boolean;
+  } = {},
+): void {
+  if (options.skipYouTubeLikeHosts && isYouTubeLikeHost(self.site.host)) {
+    return;
+  }
+  // While smart ducking is active, the script drives video volume itself.
+  // Ignore observer-driven sync to avoid feedback loops/jitter.
+  if (self.smartVolumeDuckingInterval !== undefined) return;
+  if (!self.data?.syncVolume || !self.audioPlayer?.player?.src) return;
+  if (self.isLikelyInternalVideoVolumeChange(videoPercent)) return;
+  self.syncVolumeWrapper("video", videoPercent);
+}
+function applyOverlayLayout(
+  self: VideoHandler,
+  overlayView: NonNullable<VideoHandler["uiManager"]["dubbedOverlayView"]>,
+  heightPx?: number,
+): void {
+  const menu = overlayView.dubbedMenu?.container;
+  if (menu) {
+    let height: number;
+
+    if (heightPx) {
+      height = heightPx;
+    } else if (self.fullscreenHelper) {
+      const target = self.fullscreenHelper.getResizeObserverTarget();
+      const rect = target.getBoundingClientRect();
+      height = rect.height || target.clientHeight || window.innerHeight * 0.75;
+    } else {
+      height = self.video.getBoundingClientRect().height;
+    }
+
+    if (!height || height < 200) {
+      height = window.innerHeight * 0.75;
+    }
+
+    menu.style.setProperty("--dubbed-container-height", `${height}px`);
+  }
+  const { position, direction } = overlayView.calcButtonLayout(
+    self.data?.buttonPos ?? "default",
+  );
+  overlayView.updateButtonLayout(position, direction);
+}
+type ParsedHotkey = {
+  parts: readonly string[];
+  partsSet: ReadonlySet<string>;
+};
+function normalizeHotkeyPart(value: string): string {
+  return value.replace("Key", "").replace("Digit", "");
+}
+function buildPressedHotkeyPartsSet(
+  userPressedKeys: Iterable<string>,
+): Set<string> {
+  const pressedParts = new Set<string>();
+  for (const key of userPressedKeys) {
+    pressedParts.add(normalizeHotkeyPart(key));
+  }
+  return pressedParts;
+}
+function getParsedHotkey(
+  hotkey: string | null | undefined,
+  cache: Map<string, ParsedHotkey>,
+): ParsedHotkey | null {
+  if (!hotkey) return null;
+  const cached = cache.get(hotkey);
+  if (cached) return cached;
+  const parts = hotkey.split("+").filter(Boolean).map(normalizeHotkeyPart);
+  const parsed: ParsedHotkey = {
+    parts,
+    partsSet: new Set(parts),
+  };
+  cache.set(hotkey, parsed);
+  return parsed;
+}
+function isHotkeyMatch(
+  pressedParts: ReadonlySet<string>,
+  hotkey: ParsedHotkey | null,
+): boolean {
+  if (!hotkey) return false;
+  if (pressedParts.size !== hotkey.parts.length) return false;
+  for (const key of hotkey.partsSet) {
+    if (!pressedParts.has(key)) return false;
+  }
+  return true;
+}
+function bindOverlayLayoutEvents(ctx: ExtraEventsContext): void {
+  const { self, overlayView, addMany } = ctx;
+  const syncMountAndLayout = () => {
+    self.refreshOverlayMount();
+    applyOverlayLayout(self, overlayView);
+  };
+  self.resizeObserver = new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      applyOverlayLayout(self, overlayView, entry.contentRect.height);
+    }
+  });
+  self.resizeObserver.observe(self.video);
+  syncMountAndLayout();
+  addMany(document, ["fullscreenchange", "webkitfullscreenchange"], () =>
+    syncMountAndLayout(),
+  );
+  addMany(self.video, ["webkitbeginfullscreen", "webkitendfullscreen"], () =>
+    syncMountAndLayout(),
+  );
+}
+function bindYouTubeVolumeSync(ctx: ExtraEventsContext): void {
+  const { self } = ctx;
+  if (!isDesktopYouTubeLikeSite(self.site)) return;
+  self.syncVolumeObserver = new MutationObserver((mutations) => {
+    if (!self.audioPlayer?.player?.src) return;
+    let hasVolumeMutation = false;
+    for (const mutation of mutations) {
+      if (
+        mutation.type !== "attributes" ||
+        mutation.attributeName !== "aria-valuenow"
+      ) {
+        continue;
+      }
+      hasVolumeMutation = true;
+    }
+    if (!hasVolumeMutation) return;
+    self.syncVideoVolumeSlider();
+    const activeOverlayView = self.uiManager.dubbedOverlayView;
+    if (!activeOverlayView?.isInitialized()) return;
+    const videoPercent = toPercentInt(
+      activeOverlayView.videoVolumeSlider.value,
+    );
+    syncAudioTranslationVolumeFromVideo(self, videoPercent);
+  });
+  const ytpVolumePanel = document.querySelector(".ytp-volume-panel");
+  if (!ytpVolumePanel) return;
+  self.syncVolumeObserver.observe(ytpVolumePanel, {
+    attributes: true,
+    subtree: true,
+    attributeFilter: ["aria-valuenow"],
+  });
+}
+function bindAudioTrackLanguageSync(ctx: ExtraEventsContext): void {
+  const { self } = ctx;
+  if (self.site.host !== "youtube" || self.site.additionalData === "mobile")
+    return;
+  const syncAudioTrackLanguage = async () => {
+    try {
+      if (!self.videoData) return;
+      const player = YoutubeHelper.getPlayer();
+      const availableTracks = player?.getAvailableAudioTracks?.() ?? null;
+      if (!Array.isArray(availableTracks) || availableTracks.length <= 1)
+        return;
+      const currentTrackInfo = player?.getAudioTrack?.()?.getLanguageInfo?.();
+      const currentTrackId = currentTrackInfo?.id;
+      const currentLanguageCode =
+        currentTrackId && currentTrackId !== "und"
+          ? currentTrackId.toLowerCase().split(/[-_.]/)[0]
+          : undefined;
+      if (!currentLanguageCode) return;
+      if (!availableLangs.includes(currentLanguageCode as RequestLang)) return;
+      const currentLanguage = currentLanguageCode as RequestLang;
+      if (currentLanguage === self.videoData.detectedLanguage) return;
+      self.videoManager.rememberDetectedLanguage(
+        self.videoData.videoId,
+        currentLanguage,
+      );
+      self.setSelectMenuValues(
+        currentLanguage,
+        self.videoData.responseLanguage,
+      );
+      if (
+        self.data?.autoTranslate &&
+        currentLanguage !== self.videoData.responseLanguage
+      ) {
+        debug.log(
+          `[Dubbed] Audio track language changed to ${currentLanguage}, triggering auto-translation`,
+        );
+        try {
+          await self.uiManager.handleTranslationBtnClick();
+        } catch (error) {
+          debug.log(
+            "[Dubbed] Failed to trigger auto-translation on audio track change:",
+            error,
+          );
+        }
+      }
+    } catch (error) {
+      debug.log("[Dubbed] Failed to sync audio track language", error);
+    }
+  };
+  const player = YoutubeHelper.getPlayer();
+  const listeners = ["onApiChange", "onStateChange"] as const;
+  if (player?.addEventListener) {
+    for (const eventName of listeners) {
+      try {
+        player.addEventListener(eventName, syncAudioTrackLanguage);
+      } catch (error) {
+        debug.log(`[Dubbed] Failed to bind ${eventName}`, error);
+      }
+    }
+  }
+  void syncAudioTrackLanguage();
+  self.abortController.signal.addEventListener(
+    "abort",
+    () => {
+      if (!player?.removeEventListener) return;
+      for (const eventName of listeners) {
+        try {
+          player.removeEventListener(eventName, syncAudioTrackLanguage);
+        } catch (error) {
+          debug.log(`[Dubbed] Failed to unbind ${eventName}`, error);
+        }
+      }
+    },
+    { once: true },
+  );
+}
+function bindGlobalDismissAndHotkeys(ctx: ExtraEventsContext): void {
+  const { self, overlayView, add, addMany, platformConfig } = ctx;
+  add(document, "click", (event) => {
+    const target = event.target as Node | null;
+    const button = overlayView.dubbedButton?.container;
+    const menu = overlayView.dubbedMenu?.container;
+    const settings = self.uiManager.dubbedSettingsView?.dialog?.container;
+    const path = event.composedPath();
+    const isInPath = (element?: EventTarget | null) =>
+      Boolean(element && path.includes(element));
+    const isButton = isInPath(button);
+    const isMenu = isInPath(menu);
+    const isVideo = isInPath(self.container);
+    const isSettings = isInPath(settings);
+    const isTempDialog =
+      target instanceof Element &&
+      target.closest(".dubbed-dialog-temp") instanceof Element;
+    debug.log(
+      `[document click] ${isButton} ${isMenu} ${isVideo} ${isSettings} ${isTempDialog}`,
+    );
+    if (isButton || isMenu || isSettings || isTempDialog) return;
+    if (!isVideo) overlayView.updateButtonOpacity(0);
+    if (menu && !menu.hidden) {
+      menu.hidden = true;
+      self.overlayVisibility?.queueAutoHide();
+    }
+  });
+  const userPressedKeys = new Set<string>();
+  const hotkeyCache = new Map<string, ParsedHotkey>();
+  const clearUserPressedKeys = () => userPressedKeys.clear();
+  const runHotkeyAction = (
+    action: () => Promise<unknown>,
+    actionName: string,
+  ) => {
+    void action().catch((error) => {
+      debug.log(`[Dubbed] ${actionName} hotkey action failed`, error);
+    });
+  };
+  add(document, "keydown", (event) => {
+    const keyboardEvent = event as KeyboardEvent;
+    if (keyboardEvent.repeat) return;
+    userPressedKeys.add(keyboardEvent.code);
+    const activeElement = getDeepActiveElement(document) as HTMLElement | null;
+    const activeTag = activeElement?.tagName?.toLowerCase?.() ?? "";
+    const isInputElement =
+      ["input", "textarea"].includes(activeTag) ||
+      Boolean(activeElement?.isContentEditable);
+    if (isInputElement) return;
+    const pressedParts = buildPressedHotkeyPartsSet(userPressedKeys);
+    if (
+      isHotkeyMatch(
+        pressedParts,
+        getParsedHotkey(self.data?.translationHotkey, hotkeyCache),
+      )
+    ) {
+      clearUserPressedKeys();
+      runHotkeyAction(
+        () => self.uiManager.handleTranslationBtnClick(),
+        "Translation",
+      );
+      return;
+    }
+    if (
+      isHotkeyMatch(
+        pressedParts,
+        getParsedHotkey(self.data?.subtitlesHotkey, hotkeyCache),
+      )
+    ) {
+      clearUserPressedKeys();
+      runHotkeyAction(
+        () => self.toggleSubtitlesForCurrentLangPair(),
+        "Subtitles",
+      );
+    }
+  });
+  add(document, "keyup", (event) =>
+    userPressedKeys.delete((event as KeyboardEvent).code),
+  );
+  add(document, "blur", clearUserPressedKeys);
+  add(document, "visibilitychange", () => {
+    if (document.hidden) clearUserPressedKeys();
+  });
+  add(globalThis, "blur", clearUserPressedKeys);
+  const eventContainer = self.getEventContainer();
+  if (eventContainer) {
+    const useWindowEvents = isIframe() && globalThis.window !== undefined;
+    const interactionTarget = useWindowEvents
+      ? globalThis.window
+      : eventContainer;
+
+    if (useWindowEvents) {
+      addMany(
+        interactionTarget,
+        ["pointermove", "pointerdown"],
+        (event) => self.overlayVisibility.handleHostInteraction(event),
+        { passive: true },
+      );
+      add(interactionTarget, "blur", () =>
+        self.overlayVisibility.scheduleHide(),
+      );
+    } else {
+      addMany(interactionTarget, ["pointerenter", "pointerdown"], (event) =>
+        self.overlayVisibility.handleHostInteraction(event),
+      );
+      add(
+        interactionTarget,
+        "pointermove",
+        (event) => self.overlayVisibility.handleHostInteraction(event),
+        { passive: true },
+      );
+    }
+  }
+  self.rebindOverlayVisibilityTargets();
+  if (platformConfig.allowTouchMoveHandler) {
+    add(
+      document,
+      "touchmove",
+      (event) => self.overlayVisibility.handleHostInteraction(event),
+      { passive: true },
+    );
+  }
+  if (platformConfig.disableContainerDrag) {
+    self.container.draggable = false;
+  }
+}
+export function bindPlaybackRefreshOnResume(ctx: ExtraEventsContext): void {
+  const { self, add } = ctx;
+  let wasPausedSinceLastPlay = false;
+
+  const resetPauseState = () => {
+    wasPausedSinceLastPlay = false;
+  };
+
+  add(self.video, "pause", () => {
+    wasPausedSinceLastPlay = true;
+  });
+
+  add(self.video, "playing", () => {
+    if (!wasPausedSinceLastPlay) return;
+    wasPausedSinceLastPlay = false;
+    handlePlaybackResumedTranslationRefresh.call(self).catch((error) => {
+      debug.log(
+        "[Dubbed] Failed to refresh translation after playback resumed",
+        error,
+      );
+    });
+  });
+
+  add(self.video, "loadstart", resetPauseState);
+  add(self.video, "emptied", resetPauseState);
+}
+function bindVideoLifecycleEvents(ctx: ExtraEventsContext): void {
+  const { self, overlayView, add } = ctx;
+  const safeSetCanPlay = async () => {
+    try {
+      await self.setCanPlay();
+    } catch (err) {
+      debug.log("[Dubbed] setCanPlay() failed", err);
+    }
+  };
+  let setCanPlayQueued = false;
+  const queueSetCanPlay = () => {
+    if (setCanPlayQueued) return;
+    setCanPlayQueued = true;
+    queueMicrotask(async () => {
+      setCanPlayQueued = false;
+      await safeSetCanPlay();
+    });
+  };
+  let emptiedHandled = false;
+  add(self.video, "canplay", () => {
+    emptiedHandled = false;
+    if (self.site.host === "rutube" && self.video.src) return;
+    queueSetCanPlay();
+  });
+  const handleVideoEmptied = async () => {
+    if (emptiedHandled) return;
+    emptiedHandled = true;
+    let videoId: string | undefined;
+    try {
+      videoId = await getVideoID(self.site, {
+        fetchFn: GM_fetch,
+        video: self.video,
+      });
+    } catch (error) {
+      debug.log("[Dubbed] Failed to resolve video id on emptied", error);
+    }
+    if (self.videoData && videoId && videoId === self.videoData.videoId) {
+      // Quality changes can trigger media reload (`emptied`) for the same
+      // logical video. Re-arm the guard and keep state intact.
+      emptiedHandled = false;
+      return;
+    }
+    debug.log("lipsync mode is emptied");
+    resetAndHideLifecycle(self, overlayView, {
+      clearVideoData: true,
+      hideMenu: true,
+    });
+  };
+  add(self.video, "emptied", () => {
+    void handleVideoEmptied().catch((error) => {
+      debug.log("[Dubbed] Failed to handle emptied lifecycle event", error);
+    });
+  });
+  if (!isMuteSyncDisabledHost(self.site.host)) {
+    add(self.video, "volumechange", () => {
+      self.syncVideoVolumeSlider();
+      const activeOverlayView = self.uiManager.dubbedOverlayView;
+      if (!activeOverlayView?.isInitialized()) return;
+      const videoPercent = toPercentInt(
+        activeOverlayView.videoVolumeSlider.value,
+      );
+      syncAudioTranslationVolumeFromVideo(self, videoPercent, {
+        skipYouTubeLikeHosts: true,
+      });
+    });
+  }
+  if (self.site.host === "youtube" && !self.site.additionalData) {
+    add(document, "yt-page-data-updated", () => {
+      debug.log("yt-page-data-updated");
+      if (!globalThis.location.pathname.startsWith("/shorts/")) return;
+      queueSetCanPlay();
+    });
+  }
+}
+export function initExtraEvents(this: VideoHandler) {
+  const overlayView = this.uiManager.dubbedOverlayView;
+  if (!overlayView?.subtitlesSelect) return;
+  const { add, addMany } = createScopedListeners(this.abortController.signal);
+  const ctx: ExtraEventsContext = {
+    self: this,
+    overlayView,
+    platformConfig: getPlatformEventConfig(this.site.host),
+    add,
+    addMany,
+  };
+  bindPlaybackRefreshOnResume(ctx);
+  bindOverlayLayoutEvents(ctx);
+  bindYouTubeVolumeSync(ctx);
+  bindAudioTrackLanguageSync(ctx);
+  bindGlobalDismissAndHotkeys(ctx);
+  bindVideoLifecycleEvents(ctx);
+}
+export function rebindOverlayVisibilityTargets(this: VideoHandler) {
+  this.overlayVisibilityTargetsAbortController?.abort();
+  this.overlayVisibilityTargetsAbortController = new AbortController();
+  const { signal } = this.overlayVisibilityTargetsAbortController;
+  const overlayView = this.uiManager?.dubbedOverlayView;
+  const overlayButton = overlayView?.dubbedButton?.container;
+  const overlayMenu = overlayView?.dubbedMenu?.container;
+
+  if (!overlayButton || !overlayMenu || !this.overlayVisibility) return;
+  const overlayVisibility = this.overlayVisibility;
+  const { addMany } = createScopedListeners(signal);
+  bindOverlayHoverFocusEvents(addMany, overlayButton, overlayVisibility);
+  bindOverlayHoverFocusEvents(addMany, overlayMenu, overlayVisibility);
+
+  // Keep the overlay visible while the voice popover is hovered/focused.
+  // Popover is portaled next to the menu under the overlay root (not under the
+  // button subtree), so visibility logic must treat it like the menu.
+  const voicePopoverContainer = overlayView?.voicePopover?.container;
+  if (voicePopoverContainer) {
+    bindOverlayHoverFocusEvents(
+      addMany,
+      voicePopoverContainer,
+      overlayVisibility,
+    );
+  }
+}
+export function isOverlayInteractiveNode(
+  this: VideoHandler,
+  node: unknown,
+): boolean {
+  if (!(node instanceof Node)) return false;
+  const overlayView = this.uiManager?.dubbedOverlayView;
+  const buttonContainer = overlayView?.dubbedButton?.container;
+  const menuContainer = overlayView?.dubbedMenu?.container;
+  const voicePopoverContainer = overlayView?.voicePopover?.container;
+  return (
+    (buttonContainer instanceof Node &&
+      containsCrossShadow(buttonContainer, node)) ||
+    (menuContainer instanceof Node &&
+      containsCrossShadow(menuContainer, node)) ||
+    (voicePopoverContainer instanceof Node &&
+      containsCrossShadow(voicePopoverContainer, node))
+  );
+}
+export function getAutoHideDelay(this: VideoHandler): number {
+  const delay = this.data?.autoHideButtonDelay;
+  return typeof delay === "number" && Number.isFinite(delay)
+    ? delay
+    : defaultAutoHideDelay;
+}
+export function releaseExtraEvents(this: VideoHandler) {
+  this.resizeObserver?.disconnect();
+  this.overlayVisibilityTargetsAbortController?.abort();
+  this.overlayVisibilityTargetsAbortController = undefined;
+  if (isDesktopYouTubeLikeSite(this.site)) {
+    this.syncVolumeObserver?.disconnect();
+  }
+}

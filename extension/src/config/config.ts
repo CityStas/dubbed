@@ -1,0 +1,61 @@
+// CONFIGURATION
+
+export const workerHost = "api.browser.yandex.ru";
+
+/**
+ * used for streaming
+ *
+ * @see https://github.com/FOSWLY/media-proxy
+ */
+export const m3u8ProxyHost = "media-proxy.toil.cc/v1/proxy/m3u8";
+
+/**
+ * @see https://github.com/FOSWLY/vot-worker
+ */
+export const proxyWorkerHostMode1 = "vot-worker.vtrans.eu.cc";
+export const proxyWorkerHost = "vot-worker.eu.cc"; // vot-worker.toil.cc
+
+/**
+ * @see https://github.com/FOSWLY/translate-backend
+ */
+export const foswlyTranslateUrl = "https://translate-backend.transly.eu.cc/v2"; // "https://translate.toil.cc/v2"
+
+export const detectRustServerUrl =
+  "https://rust-server-531j.onrender.com/detect";
+export const authServerUrl = "https://rust-server-531j.onrender.com";
+export const authLoginUrl = `${authServerUrl}/v1/auth/handle`;
+export const avatarServerUrl = "https://avatars.mds.yandex.net/get-yapic";
+
+const repoPath = ""; // self-contained build: no external git repository
+export const contentUrl = repoPath ? `https://raw.githubusercontent.com/${repoPath}` : "";
+export const repositoryUrl = repoPath ? `https://github.com/${repoPath}` : "";
+
+/**
+ * 0% - 100% - default volume of the video with the translation
+ */
+export const defaultAutoVolume = 15;
+
+/**
+ * Max audio volume percentage (if available)
+ */
+export const maxAudioVolume = 900;
+
+/**
+ * The number of repeated responses after which the message turns into
+ * "translation is delayed, please wait"
+ */
+export const minLongWaitingCount = 5;
+
+export const defaultTranslationService: "yandexbrowser" | "msedge" =
+  "yandexbrowser";
+export const defaultDetectService: "yandexbrowser" | "msedge" | "rust-server" =
+  "yandexbrowser";
+
+export const proxyOnlyCountries: string[] = ["UA", "LV", "LT"];
+
+/**
+ * 100 - 3000 ms - delay before hiding button
+ */
+export const defaultAutoHideDelay = 1000;
+
+export const actualCompatVersion = "2026-09-12";

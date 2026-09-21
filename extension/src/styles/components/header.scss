@@ -1,0 +1,51 @@
+/*
+ * In-content headings used inside dialogs.
+ *
+ * The scale is tightened versus the original (which used raw `em` ratios) so
+ * headings sit comfortably next to 14px body copy.
+ */
+.dubbed-header {
+  color: rgb(var(--dubbed-foreground-rgb));
+  font-family: var(
+    --dubbed-font-family,
+    "Inter",
+    "Inter var",
+    "Geist",
+    "Segoe UI Variable Text",
+    "Segoe UI",
+    system-ui,
+    sans-serif
+  );
+  font-weight: 600 !important;
+  letter-spacing: -0.02em;
+  line-height: 1.35;
+  text-align: start;
+
+  &:not(:first-child) {
+    padding-top: var(--dubbed-space-2);
+  }
+
+  &-level-1 {
+    font-size: 1.5em;
+  }
+
+  &-level-2 {
+    font-size: 1.25em;
+  }
+
+  &-level-3 {
+    font-size: 1.125em;
+  }
+
+  &-level-4 {
+    font-size: 1em;
+  }
+
+  &-level-5 {
+    font-size: 0.875em;
+  }
+
+  &-level-6 {
+    font-size: 0.75em;
+  }
+}

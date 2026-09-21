@@ -1,0 +1,35 @@
+/*
+ * Account row (avatar + username + sign in/out actions).
+ */
+.dubbed-account {
+  display: flex;
+  gap: var(--dubbed-space-4);
+  align-items: center;
+  justify-content: space-between;
+
+  &-container,
+  &-wrapper,
+  &-buttons {
+    display: flex;
+    gap: var(--dubbed-space-4);
+    align-items: center;
+  }
+
+  &-avatar {
+    max-width: 32px;
+    max-height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    overflow: hidden;
+    border-radius: var(--dubbed-radius-pill);
+    box-shadow: 0 0 0 1px var(--dubbed-border-color);
+
+    &-img {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--dubbed-radius-pill);
+      object-fit: cover;
+      display: block;
+    }
+  }
+}

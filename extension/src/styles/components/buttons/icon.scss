@@ -1,0 +1,43 @@
+@use "./mixins" as button;
+
+/*
+ * shadcn icon button (`size-9`, ghost).
+ *
+ * Kept square (36x36) and given the same 8px radius as the other controls so
+ * the menu header (gear / download) reads as a shadcn toolbar.
+ */
+.dubbed-icon-button {
+  --dubbed-helper-onsurface: rgb(var(--dubbed-foreground-rgb));
+  @include button.dubbed-button-base(
+    $radius: var(--dubbed-radius-m),
+    $padding: 0,
+    $min-width: 36px,
+    $height: 36px,
+    $line-height: 1,
+    $margin: 0 !important
+  );
+  border: 1px solid transparent !important;
+  width: 36px;
+  fill: var(--dubbed-helper-onsurface);
+  color: var(--dubbed-helper-onsurface);
+  background-color: transparent !important;
+  @include button.dubbed-button-focus;
+  @include button.dubbed-button-disabled;
+
+  &:hover:not([disabled="true"]) {
+    background-color: rgb(var(--dubbed-accent-rgb)) !important;
+    color: rgb(var(--dubbed-accent-foreground-rgb)) !important;
+    fill: rgb(var(--dubbed-accent-foreground-rgb)) !important;
+  }
+
+  &:active:not([disabled="true"]) {
+    background-color: rgba(var(--dubbed-accent-rgb), 0.8) !important;
+  }
+
+  & svg {
+    fill: inherit;
+    stroke: inherit;
+    width: 24px;
+    height: 24px;
+  }
+}

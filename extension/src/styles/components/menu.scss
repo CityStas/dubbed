@@ -1,0 +1,254 @@
+@use "../mixins" as shared;
+
+/*
+ * Quick menu popover.
+ *
+ *   14px radius · hairline border · `card` surface · layered shadow
+ *   15px semibold title · 16px gutters · 8px row rhythm
+ *
+ * All positioning (`data-position`, safe-area offsets, hidden transforms) is
+ * unchanged — only the surface styling was rebuilt.
+ */
+.dubbed-menu {
+  --dubbed-helper-surface-rgb: var(--dubbed-card-rgb, 255, 255, 255);
+  --dubbed-helper-surface: rgb(var(--dubbed-helper-surface-rgb));
+  --dubbed-helper-onsurface-rgb: var(--dubbed-foreground-rgb, 0, 0, 0);
+  --dubbed-helper-onsurface: rgb(var(--dubbed-helper-onsurface-rgb));
+  --dubbed-settings-control-width: clamp(120px, 45%, 200px);
+
+  --dubbed-menu-default-top: calc(5rem + 48px);
+  --dubbed-menu-top-offset: max(64px, calc(env(safe-area-inset-top, 0px) + 56px));
+  --dubbed-menu-side-offset: max(
+    76px,
+    calc(env(safe-area-inset-left, 0px) + 64px)
+  );
+  --dubbed-menu-side-offset-right: max(
+    76px,
+    calc(env(safe-area-inset-right, 0px) + 64px)
+  );
+  --dubbed-menu-side-top-offset: max(
+    clamp(56px, 12.5vh, 136px),
+    calc(env(safe-area-inset-top, 0px) + 8px)
+  );
+
+  overflow: hidden;
+  position: absolute;
+  left: 50%;
+  right: auto;
+  top: var(--dubbed-menu-default-top);
+
+  @media (pointer: coarse) {
+    --dubbed-menu-default-top: calc(3rem + 48px);
+    --dubbed-menu-top-offset: max(
+      56px,
+      calc(env(safe-area-inset-top, 0px) + 48px)
+    );
+    --dubbed-menu-side-offset: max(
+      64px,
+      calc(env(safe-area-inset-left, 0px) + 54px)
+    );
+    --dubbed-menu-side-offset-right: max(
+      64px,
+      calc(env(safe-area-inset-right, 0px) + 54px)
+    );
+    --dubbed-menu-side-top-offset: max(
+      clamp(50px, 12.5vh, 120px),
+      calc(env(safe-area-inset-top, 0px) + 8px)
+    );
+  }
+
+  user-select: none;
+  background-color: var(--dubbed-helper-surface);
+  color: var(--dubbed-helper-onsurface);
+  border: 1px solid var(--dubbed-border-color) !important;
+  border-radius: var(--dubbed-radius-l) !important;
+  box-shadow: var(--dubbed-shadow-2) !important;
+  @include shared.dubbed-font-family;
+  font-size: 14px;
+  line-height: 1.5;
+  min-width: 320px;
+  width: fit-content;
+  max-width: min(90vw, 560px);
+  cursor: default;
+  z-index: 2147483646;
+
+  visibility: visible;
+  opacity: 1;
+  transform-origin: top;
+  transform: translate(-50%) scale(1);
+  transition:
+    opacity var(--dubbed-duration-medium) var(--dubbed-easing-standard),
+    transform var(--dubbed-duration-medium) var(--dubbed-easing-standard);
+
+  & * {
+    box-sizing: border-box !important;
+  }
+
+  &[hidden] {
+    pointer-events: none;
+    display: block !important;
+    visibility: hidden;
+    opacity: 0;
+    transform: translate(-50%, -4px) scale(0.98);
+  }
+
+  &-content-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-width: 320px;
+    min-height: 100px;
+    // Expanded menu: everything visible without inner scrolling.
+    // Reserve only the menu's top offset (5rem + 48px = 8rem) inside the player
+    // container — the previous hardcoded (5rem + 32px + 16px) * 2 = 256px
+    // reservation collapsed the menu to a tiny scrollable box in small
+    // players (expanded correctly only in fullscreen).
+    max-height: min(
+      calc(var(--dubbed-container-height, 75vh) - 8rem),
+      80vh
+    );
+    overflow: auto;
+  }
+
+  &-header-container {
+    flex-shrink: 0;
+    align-items: center;
+    display: flex;
+    min-height: 31px;
+
+    // Prevent header icon buttons (gear/download) from hugging the right edge.
+    padding-inline-end: var(--dubbed-space-3) !important;
+
+    &:empty {
+      padding: 0 0 16px 0 !important;
+    }
+
+    & > .dubbed-icon-button {
+      margin-inline-end: var(--dubbed-space-1) !important;
+      margin-top: var(--dubbed-space-1) !important;
+    }
+  }
+
+  &-title-container {
+    display: flex;
+    flex: 1;
+    font-size: inherit;
+    font-weight: inherit !important;
+    margin: 0 !important;
+    outline: 0;
+    text-align: start;
+  }
+
+  &-title {
+    flex: 1;
+    font-size: 15px;
+    font-weight: 600 !important;
+    letter-spacing: -0.02em;
+    line-height: 1.3;
+    padding: var(--dubbed-space-4) !important;
+  }
+
+  &-body-container {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    min-height: 1.375rem;
+    overflow: auto;
+    padding: 0 var(--dubbed-space-4) !important;
+    gap: var(--dubbed-space-2);
+    overscroll-behavior: contain;
+    @include shared.dubbed-overlay-scrollbar;
+  }
+
+  &-footer-container {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: flex-end;
+    padding: var(--dubbed-space-4) !important;
+
+    &:empty {
+      padding: var(--dubbed-space-4) 0 0 0 !important;
+    }
+  }
+
+  // Align labeled selects to the right edge in the compact menu.
+  .dubbed-select--labeled > .dubbed-select-outer {
+    margin-left: auto;
+  }
+
+  &[data-position="left"] {
+    left: var(--dubbed-menu-side-offset);
+    right: auto;
+    top: var(--dubbed-menu-side-top-offset);
+    transform-origin: left top;
+    transform: scale(1);
+  }
+
+  &[data-position="right"] {
+    left: auto;
+    right: var(--dubbed-menu-side-offset-right);
+    top: var(--dubbed-menu-side-top-offset);
+    transform-origin: right top;
+    transform: scale(1);
+  }
+
+  &[data-position="leftCenter"] {
+    left: var(--dubbed-menu-side-offset);
+    right: auto;
+    top: 50%;
+    transform-origin: left;
+    transform: translateY(-50%) scale(1);
+  }
+
+  &[data-position="rightCenter"] {
+    left: auto;
+    right: var(--dubbed-menu-side-offset-right);
+    top: 50%;
+    transform-origin: right;
+    transform: translateY(-50%) scale(1);
+  }
+
+  &[data-position="left"][hidden],
+  &[data-position="right"][hidden] {
+    transform: translateY(-4px) scale(0.98);
+  }
+
+  &[data-position="leftCenter"][hidden],
+  &[data-position="rightCenter"][hidden] {
+    transform: translateY(calc(-50% - 4px)) scale(0.98);
+  }
+
+  // "How to use?" — pinned, always-visible bar at the bottom of the quick menu.
+  & > .dubbed-howto {
+    flex: 0 0 auto;
+    background-color: rgb(var(--dubbed-muted-rgb));
+    border-top: 1px solid var(--dubbed-border-color);
+  }
+
+  & > .dubbed-howto > .dubbed-howto-summary {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--dubbed-space-2);
+    cursor: pointer;
+    user-select: none;
+    font-size: 13px;
+    font-weight: 500 !important;
+    color: rgb(var(--dubbed-muted-foreground-rgb));
+    padding: var(--dubbed-space-3);
+    -webkit-tap-highlight-color: transparent;
+    transition: color var(--dubbed-duration-fast) var(--dubbed-easing-standard);
+
+    &:hover {
+      color: rgb(var(--dubbed-foreground-rgb));
+    }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: inset 0 0 0 3px var(--dubbed-focus-ring-color);
+    }
+  }
+
+  & > .dubbed-howto > .dubbed-howto-summary::after {
+    content: " ▸";
+  }
+}

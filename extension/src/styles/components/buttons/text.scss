@@ -1,0 +1,37 @@
+@use "./mixins" as button;
+
+/*
+ * shadcn `Button` — ghost variant.
+ * `hover:bg-accent hover:text-accent-foreground`
+ *
+ * Text-only actions stay invisible until hovered; the accent fill appears
+ * with an 8px radius instead of the old Material ripple.
+ */
+.dubbed-text-button {
+  --dubbed-helper-theme: var(
+    --dubbed-theme-rgb,
+    var(--dubbed-primary-rgb, 33, 150, 243)
+  );
+  @include button.dubbed-button-base(
+    $radius: var(--dubbed-radius-m),
+    $padding: 0 var(--dubbed-space-3),
+    $min-width: 64px,
+    $height: 36px,
+    $line-height: 1,
+    $margin: 0 !important
+  );
+  border: 1px solid transparent !important;
+  color: rgb(var(--dubbed-foreground-rgb)) !important;
+  background-color: transparent !important;
+  @include button.dubbed-button-focus;
+  @include button.dubbed-button-disabled;
+
+  &:hover:not([disabled="true"]) {
+    background-color: rgb(var(--dubbed-accent-rgb)) !important;
+    color: rgb(var(--dubbed-accent-foreground-rgb)) !important;
+  }
+
+  &:active:not([disabled="true"]) {
+    background-color: rgba(var(--dubbed-accent-rgb), 0.8) !important;
+  }
+}

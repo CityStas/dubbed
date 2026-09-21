@@ -1,0 +1,124 @@
+/*
+ * Text field.
+ *
+ * Replaces the Material "notched outline + floating label" with a flat
+ * caption-above-control layout:
+ *
+ *   <label caption, 12px, muted>
+ *   <36px input, 10px radius, hairline border, translucent well>
+ *
+ * The label element lives *after* the input in the DOM, so the field uses
+ * `flex-direction: column` + `order` to render it on top.
+ */
+.dubbed-textfield {
+  --dubbed-helper-theme: rgb(var(--dubbed-ring-rgb)) !important;
+  --dubbed-helper-safari1: var(--dubbed-input-color) !important;
+  --dubbed-helper-safari2: var(--dubbed-input-color) !important;
+  --dubbed-helper-safari3: var(--dubbed-input-color-hover) !important;
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 0 !important;
+  font-family: var(
+    --dubbed-font-family,
+    "Inter",
+    "Inter var",
+    "Geist",
+    "Segoe UI Variable Text",
+    "Segoe UI",
+    system-ui,
+    sans-serif
+  ) !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  text-align: start !important;
+
+  & > :is(input, textarea) {
+    order: 2;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    border-style: solid !important;
+    border-width: 1px !important;
+    border-color: var(--dubbed-helper-safari1) !important;
+    border-radius: var(--dubbed-radius-m) !important;
+    padding: 0 var(--dubbed-space-3) !important;
+    width: 100% !important;
+    height: 36px !important;
+    color: rgb(var(--dubbed-foreground-rgb)) !important;
+    -webkit-text-fill-color: currentColor !important; /* Safari */
+    background-color: rgba(var(--dubbed-input-rgb), 0.045) !important;
+    box-shadow: var(--dubbed-shadow-xs) !important;
+    font-family: inherit !important;
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    caret-color: rgb(var(--dubbed-primary-rgb)) !important;
+    transition:
+      border-color var(--dubbed-duration-fast) var(--dubbed-easing-standard),
+      background-color var(--dubbed-duration-fast) var(--dubbed-easing-standard),
+      box-shadow var(--dubbed-duration-fast) var(--dubbed-easing-standard) !important;
+
+    &::placeholder {
+      color: rgb(var(--dubbed-muted-foreground-rgb)) !important;
+    }
+
+    &:hover:not(:disabled):not(:focus) {
+      border-color: var(--dubbed-helper-safari3) !important;
+      background-color: rgba(var(--dubbed-input-rgb), 0.075) !important;
+    }
+
+    &:focus {
+      border-color: rgb(var(--dubbed-ring-rgb)) !important;
+      background-color: rgba(var(--dubbed-input-rgb), 0.075) !important;
+      box-shadow: var(--dubbed-focus-ring) !important;
+      outline: none !important;
+    }
+
+    &:disabled {
+      opacity: 0.5 !important;
+      cursor: not-allowed !important;
+    }
+
+    // Caption label (static, above the control).
+    & + span {
+      order: 1;
+      position: static !important;
+      display: block !important;
+      width: auto !important;
+      max-height: none !important;
+      color: rgb(var(--dubbed-muted-foreground-rgb)) !important;
+      font-size: 12px !important;
+      font-family: inherit;
+      font-weight: 500 !important;
+      line-height: 1.4 !important;
+      cursor: default !important;
+      pointer-events: none !important;
+      transition: color var(--dubbed-duration-fast)
+        var(--dubbed-easing-standard) !important;
+
+      // The old notched-outline "corner" pseudo elements are gone.
+      &::before,
+      &::after {
+        content: none !important;
+        display: none !important;
+      }
+    }
+
+    &:focus + span {
+      color: rgb(var(--dubbed-foreground-rgb)) !important;
+    }
+  }
+
+  // No label supplied → collapse the caption row entirely.
+  & > span:empty {
+    display: none !important;
+  }
+
+  // Multi-line keeps a comfortable minimum height.
+  & > textarea {
+    min-height: 84px !important;
+    height: auto !important;
+    padding: var(--dubbed-space-2) var(--dubbed-space-3) !important;
+    resize: vertical;
+  }
+}

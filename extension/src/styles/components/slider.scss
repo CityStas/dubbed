@@ -1,0 +1,266 @@
+/*
+ * shadcn `Slider`.
+ *
+ *   track  → h-1.5 (6px) rounded-full bg-muted
+ *   range  → bg-primary, right edge aligned with the thumb centre
+ *   thumb  → size-4 rounded-full, `bg-background` fill + primary border, hover ring-4
+ *
+ * Two hard-won implementation notes:
+ *
+ * 1. `::-webkit-*` and `::-moz-*` pseudo-elements MUST live in separate rules.
+ *    Chrome invalidates a whole selector list when it contains an unknown
+ *    pseudo-element, so `x::-webkit-slider-thumb, x::-moz-range-thumb { … }`
+ *    is silently dropped there — the thumb loses its geometry and the track
+ *    keeps the UA default. Hence the mixins below, emitted twice.
+ *
+ * 2. The thumb is deliberately painted with the *background* token, not white:
+ *    `primary` is near-white in this palette, so a white thumb would vanish
+ *    into the filled range. A dark disc with a light hairline stays readable
+ *    over both the filled and the empty part of the track.
+ *
+ * Vertical geometry is fully explicit (the input is exactly one thumb tall and
+ * the track is inset by half the difference) because Chrome pins the runnable
+ * track to the top of the input's content box, which would otherwise leave the
+ * `::before` range bar floating at a different height than the track.
+ */
+
+@mixin dubbed-slider-track {
+  margin: var(--dubbed-slider-inset) 0 !important;
+  border-radius: 999px !important;
+  width: 100% !important;
+  height: var(--dubbed-slider-track-size) !important;
+  background-color: rgb(var(--dubbed-muted-rgb)) !important;
+}
+
+@mixin dubbed-slider-thumb {
+  // Prefixed FIRST, unprefixed LAST — see `dubbed-backdrop-blur` in _mixins.scss.
+  // The reverse order makes lightningcss keep the prefixed declaration only.
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  border: 1px solid rgb(var(--dubbed-primary-rgb)) !important;
+  border-radius: 999px !important;
+  width: var(--dubbed-slider-thumb-size) !important;
+  height: var(--dubbed-slider-thumb-size) !important;
+  background-color: rgb(var(--dubbed-background-rgb)) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
+  transition: box-shadow var(--dubbed-duration-fast)
+    var(--dubbed-easing-standard) !important;
+}
+
+.dubbed-slider {
+  --dubbed-slider-track-size: 6px;
+  --dubbed-slider-thumb-size: 16px;
+  // Half the difference — used to inset the track and to place the range bar.
+  --dubbed-slider-inset: calc(
+    (var(--dubbed-slider-thumb-size) - var(--dubbed-slider-track-size)) / 2
+  );
+  --dubbed-slider-thumb-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --dubbed-slider-thumb-shadow-hover: 0 0 0 4px
+    rgba(var(--dubbed-ring-rgb), 0.5);
+  width: 100% !important;
+  color: rgb(var(--dubbed-foreground-rgb)) !important;
+  font-family: var(
+    --dubbed-font-family,
+    "Inter",
+    "Geist",
+    "Roboto",
+    "Segoe UI",
+    system-ui,
+    sans-serif
+  ) !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  text-align: start !important;
+
+  // Stable, predictable layout (no negative margins / relative shifts).
+  display: flex;
+  flex-direction: column;
+  gap: var(--dubbed-space-2);
+
+  // Label row (rendered inside a wrapping <span> by the Slider component).
+  & > span {
+    order: 1;
+    display: block !important;
+    margin: 0 !important;
+  }
+
+  // SliderLabel component.
+  .dubbed-slider-label {
+    // Proximity-first label/value layout: "Subtitles max length: 300".
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  &-label-value {
+    margin-left: 0 !important;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500 !important;
+    color: rgb(var(--dubbed-muted-foreground-rgb)) !important;
+  }
+
+  .dubbed-slider-label-text {
+    min-width: 0;
+    font-weight: 500 !important;
+  }
+
+  & > input {
+    order: 2;
+    border: none !important;
+    // Prefixed FIRST, unprefixed LAST — see `dubbed-backdrop-blur` in _mixins.scss.
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    position: relative !important;
+    top: 0 !important;
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    // Exactly one thumb tall, so `--dubbed-slider-inset` is symmetric.
+    height: var(--dubbed-slider-thumb-size) !important;
+    background-color: transparent !important;
+    cursor: pointer !important;
+
+    &:hover {
+      // Odysee applies aggressive player styles that can leak here.
+      box-shadow: none !important;
+    }
+
+    /* Range fill — drawn in the light tree so it works in every engine. */
+    &::before {
+      content: "" !important;
+      display: block !important;
+      position: absolute !important;
+      left: 0 !important;
+      top: var(--dubbed-slider-inset) !important;
+      width: calc(
+        var(--dubbed-progress, 0) * (100% - var(--dubbed-slider-thumb-size)) +
+          var(--dubbed-slider-thumb-size) / 2
+      ) !important;
+      height: var(--dubbed-slider-track-size) !important;
+      border-radius: 999px !important;
+      background: rgb(var(--dubbed-primary-rgb)) !important;
+      pointer-events: none !important;
+    }
+
+    &:disabled {
+      cursor: default !important;
+      opacity: 0.5 !important;
+
+      & + span {
+        color: rgba(var(--dubbed-foreground-rgb), 0.5) !important;
+      }
+
+      &::before {
+        background: rgb(var(--dubbed-muted-foreground-rgb)) !important;
+      }
+    }
+
+    // Keep interaction clean: avoid pointer-driven "halo" effects.
+    // (Keyboard focus indicator is handled via :focus-visible below.)
+    &:focus {
+      outline: none !important;
+    }
+
+    /* Webkit / Moz | Track — split on purpose, see the file header. */
+    &::-webkit-slider-runnable-track {
+      @include dubbed-slider-track;
+    }
+
+    &::-moz-range-track {
+      @include dubbed-slider-track;
+    }
+
+    /* Webkit / Moz | Thumb */
+    &::-webkit-slider-thumb {
+      @include dubbed-slider-thumb;
+      // Centre the thumb on the inset track.
+      margin-top: calc(-1 * var(--dubbed-slider-inset)) !important;
+    }
+
+    &::-moz-range-thumb {
+      @include dubbed-slider-thumb;
+    }
+
+    &::-webkit-slider-thumb:hover {
+      box-shadow: var(--dubbed-slider-thumb-shadow-hover) !important;
+    }
+
+    &::-moz-range-thumb:hover {
+      box-shadow: var(--dubbed-slider-thumb-shadow-hover) !important;
+    }
+
+    /* Moz | Progress */
+    &::-moz-range-progress {
+      border-radius: 999px !important;
+      height: var(--dubbed-slider-track-size) !important;
+      background-color: rgb(var(--dubbed-primary-rgb)) !important;
+    }
+
+    // Do not show focus halos for pointer focus.
+    &:focus:not(:focus-visible)::-webkit-slider-thumb {
+      box-shadow: var(--dubbed-slider-thumb-shadow) !important;
+    }
+
+    &:focus:not(:focus-visible)::-moz-range-thumb {
+      box-shadow: var(--dubbed-slider-thumb-shadow) !important;
+    }
+
+    // Keyboard focus: show an explicit indicator on the thumb.
+    // The global `html.dubbed-keyboard-nav` class is toggled by JS only on Tab.
+    @at-root {
+      html.dubbed-keyboard-nav
+        .dubbed-slider
+        > input:focus-visible::-webkit-slider-thumb {
+        box-shadow: var(--dubbed-slider-thumb-shadow-hover) !important;
+      }
+
+      html.dubbed-keyboard-nav
+        .dubbed-slider
+        > input:focus-visible::-moz-range-thumb {
+        box-shadow: var(--dubbed-slider-thumb-shadow-hover) !important;
+      }
+
+      @supports not selector(:focus-visible) {
+        html.dubbed-keyboard-nav
+          .dubbed-slider
+          > input:focus::-webkit-slider-thumb {
+          box-shadow: var(--dubbed-slider-thumb-shadow-hover) !important;
+        }
+
+        html.dubbed-keyboard-nav
+          .dubbed-slider
+          > input:focus::-moz-range-thumb {
+          box-shadow: var(--dubbed-slider-thumb-shadow-hover) !important;
+        }
+      }
+    }
+  }
+
+  // Disabled track / thumb colours (separate rules for the same reason).
+  & > input:disabled::-webkit-slider-runnable-track {
+    background-color: rgb(var(--dubbed-muted-rgb)) !important;
+  }
+
+  & > input:disabled::-moz-range-track {
+    background-color: rgb(var(--dubbed-muted-rgb)) !important;
+  }
+
+  & > input:disabled::-webkit-slider-thumb {
+    background-color: rgb(var(--dubbed-muted-foreground-rgb)) !important;
+    border-color: rgb(var(--dubbed-muted-foreground-rgb)) !important;
+    box-shadow: none !important;
+  }
+
+  & > input:disabled::-moz-range-thumb {
+    background-color: rgb(var(--dubbed-muted-foreground-rgb)) !important;
+    border-color: rgb(var(--dubbed-muted-foreground-rgb)) !important;
+    box-shadow: none !important;
+  }
+
+  & > input:disabled::-moz-range-progress {
+    background-color: rgb(var(--dubbed-muted-foreground-rgb)) !important;
+  }
+}

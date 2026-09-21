@@ -1,0 +1,221 @@
+@use "../mixins" as shared;
+
+/*
+ * Dialog shell.
+ *
+ *   backdrop → black/62 with a 6px blur (visible depth cue over video)
+ *   box      → 18px radius, hairline border, near-black `background` surface,
+ *              layered shadow; 512px max width
+ *   header   → 16px semibold title + ghost close button
+ *   body     → 20px gutters, 16px rhythm
+ *   footer   → right-aligned action row
+ *
+ * JS still drives `data-vertical-align` and `--dubbed-dialog-max-height`, so
+ * the adaptive centering / top-alignment behaviour is unchanged.
+ */
+.dubbed-dialog {
+  --dubbed-helper-surface-rgb: var(--dubbed-background-rgb, 255, 255, 255);
+  --dubbed-helper-surface: rgb(var(--dubbed-helper-surface-rgb));
+  --dubbed-helper-onsurface-rgb: var(--dubbed-foreground-rgb, 0, 0, 0);
+  --dubbed-helper-onsurface: rgb(var(--dubbed-helper-onsurface-rgb));
+  // When content is small we keep the dialog visually centered. For larger
+  // content (long settings pages, large blocks of text), JS can switch the
+  // dialog to a top-aligned mode and increase the max height via CSS vars.
+  --dubbed-dialog-viewport-margin: 16px;
+  --dubbed-dialog-max-height: 75vh;
+  display: block;
+  position: fixed;
+  max-width: initial;
+  max-height: initial;
+  width: min(var(--dubbed-dialog-width, 512px), 100%);
+  height: fit-content;
+  inset-inline-start: 0;
+  inset-inline-end: 0;
+  inset-block-start: 0;
+  inset-block-end: 0;
+  border: 1px solid var(--dubbed-border-color);
+  border-radius: var(--dubbed-radius-xl);
+  margin: auto !important;
+  padding: 0 !important;
+  background-color: var(--dubbed-helper-surface);
+  color: var(--dubbed-helper-onsurface);
+  box-shadow: var(--dubbed-shadow-2);
+  @include shared.dubbed-font-family;
+  font-size: 14px;
+  line-height: 1.5;
+  user-select: none;
+  visibility: visible;
+  overflow: auto;
+  overflow-y: hidden;
+
+  opacity: 1;
+  transform-origin: center;
+  transform: scale(1);
+  transition:
+    opacity var(--dubbed-duration-medium) var(--dubbed-easing-standard),
+    transform var(--dubbed-duration-medium) var(--dubbed-easing-standard);
+
+  [hidden] > & {
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+    transition:
+      opacity var(--dubbed-duration-fast) var(--dubbed-easing-standard),
+      transform var(--dubbed-duration-medium) var(--dubbed-easing-standard);
+  }
+
+  &[data-vertical-align="top"] {
+    inset-block-start: var(--dubbed-dialog-viewport-margin);
+    inset-block-end: auto;
+    // Keep horizontal centering while avoiding auto vertical centering.
+    margin: 0 auto !important;
+  }
+
+  &-container {
+    visibility: visible;
+    position: absolute;
+    z-index: 2147483647;
+
+    &[hidden] {
+      display: block !important;
+      pointer-events: none;
+      visibility: hidden;
+    }
+
+    & * {
+      box-sizing: border-box !important;
+    }
+  }
+
+  &-backdrop {
+    background-color: rgba(0, 0, 0, 0.62);
+    // Order matters — see `dubbed-backdrop-blur` in _mixins.scss.
+    @include shared.dubbed-backdrop-blur(blur(6px));
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+
+    opacity: 1;
+    transition: opacity 0.3s;
+
+    [hidden] > & {
+      pointer-events: none;
+      opacity: 0;
+    }
+  }
+
+  &-content-wrapper {
+    display: flex;
+    flex-direction: column;
+    max-height: var(--dubbed-dialog-max-height, 75vh);
+    overflow: auto;
+  }
+
+  &-header-container {
+    flex-shrink: 0;
+    align-items: flex-start;
+    display: flex;
+    min-height: 31px;
+
+    &:empty {
+      padding: 0 0 20px 0;
+    }
+
+    & > .dubbed-icon-button {
+      margin-inline-end: var(--dubbed-space-2) !important;
+      margin-top: var(--dubbed-space-3) !important;
+      width: 32px;
+      min-width: 32px;
+      height: 32px;
+      color: rgb(var(--dubbed-muted-foreground-rgb));
+      fill: rgb(var(--dubbed-muted-foreground-rgb));
+
+      &:hover {
+        color: rgb(var(--dubbed-foreground-rgb)) !important;
+        fill: rgb(var(--dubbed-foreground-rgb)) !important;
+      }
+    }
+  }
+
+  &-title-container {
+    display: flex;
+    flex: 1;
+    font-size: inherit;
+    font-weight: inherit !important;
+    margin: 0 !important;
+    outline: 0;
+  }
+
+  &-title {
+    flex: 1;
+    font-size: 16px;
+    font-weight: 600 !important;
+    letter-spacing: -0.02em;
+    line-height: 1.4;
+    color: rgb(var(--dubbed-foreground-rgb));
+    padding: var(--dubbed-space-5) var(--dubbed-space-5) var(--dubbed-space-4) !important;
+  }
+
+  &-body-container {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    min-height: 1.375rem;
+    overflow: auto;
+    padding: 0 var(--dubbed-space-5) var(--dubbed-space-5) !important;
+    gap: var(--dubbed-space-3);
+    overscroll-behavior: contain;
+    @include shared.dubbed-overlay-scrollbar;
+  }
+
+  &-footer-container {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--dubbed-space-2);
+    padding: var(--dubbed-space-4) var(--dubbed-space-5) !important;
+    border-top: 1px solid var(--dubbed-border-color);
+
+    &:empty {
+      padding: 0 !important;
+      border-top: none;
+    }
+  }
+}
+
+// Mobile: avoid footer actions overflowing. Stack actions vertically and allow
+// longer localized labels to wrap instead of overflowing.
+@media (max-width: 480px) {
+  .dubbed-dialog {
+    border-radius: var(--dubbed-radius-l);
+  }
+
+  .dubbed-dialog-footer-container {
+    flex-direction: column;
+    align-items: stretch;
+
+    &:not(:empty) {
+      padding: var(--dubbed-space-4) !important;
+    }
+  }
+
+  .dubbed-dialog-footer-container
+    > :is(.dubbed-button, .dubbed-outlined-button, .dubbed-text-button) {
+    width: 100%;
+    height: auto;
+    min-height: 36px;
+    line-height: 1.2;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+}

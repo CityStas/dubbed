@@ -1,0 +1,40 @@
+/*
+ * Field / row label with an optional inline help affordance.
+ */
+.dubbed-label {
+  font-size: 14px;
+  font-weight: 500 !important;
+  letter-spacing: -0.011em;
+  line-height: 1.5;
+  color: rgb(var(--dubbed-foreground-rgb));
+  font-family: inherit;
+  display: block;
+
+  &-text {
+    display: inline;
+  }
+
+  &-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    margin-left: var(--dubbed-space-1);
+    vertical-align: text-bottom;
+    cursor: help;
+    opacity: 0.6;
+    transition: opacity var(--dubbed-duration-fast) var(--dubbed-easing-standard);
+
+    &:hover {
+      opacity: 1;
+    }
+
+    > svg {
+      width: 18px;
+      height: 18px;
+      display: block;
+      fill: rgb(var(--dubbed-muted-foreground-rgb));
+    }
+  }
+}
