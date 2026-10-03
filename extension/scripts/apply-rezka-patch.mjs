@@ -73,8 +73,8 @@ fs.copyFileSync(path.join(patchDir, "rezka.d.ts"), files.helperDts);
   let t = read(files.helperIndex);
   if (!t.includes("rezka.js")) {
     t = t.replace(
-      'import PornhubHelper from "./pornhub.js";',
-      'import PornhubHelper from "./pornhub.js";\nimport RezkaHelper from "./rezka.js";',
+      'import PicartoHelper from "./picarto.js";',
+      'import PicartoHelper from "./picarto.js";\nimport RezkaHelper from "./rezka.js";',
     );
     t = t.replace(
       "[ExtVideoService.skilljar]: SkilljarHelper,",
@@ -88,8 +88,8 @@ fs.copyFileSync(path.join(patchDir, "rezka.d.ts"), files.helperDts);
   let t = read(files.helperIndexDts);
   if (!t.includes("rezka.js")) {
     t = t.replace(
-      'import PornhubHelper from "./pornhub.js";',
-      'import PornhubHelper from "./pornhub.js";\nimport RezkaHelper from "./rezka.js";',
+      'import PicartoHelper from "./picarto.js";',
+      'import PicartoHelper from "./picarto.js";\nimport RezkaHelper from "./rezka.js";',
     );
     t = t.replace(
       "skilljar: typeof SkilljarHelper;",

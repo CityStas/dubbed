@@ -2,12 +2,62 @@
 import sites from "@vot.js/ext/sites";
 import Bun from "bun";
 
-import { extraData, siteData, sitesBlackList } from "./data";
+import { extraData, siteData } from "./data";
 import locales from "./locales";
+import headers from "../../src/headers.json";
 
-const availableSites = sites.filter(
-  (site) => !sitesBlackList.includes(site.host),
-);
+/**
+ * Публичная документация описывает только те сервисы, чьи домены разрешены в
+ * манифесте расширения (`src/headers.json`). Список не ведётся руками: убрал
+ * домен из манифеста — сервис исчез и из доков.
+ */
+const manifestHosts = headers.match
+  .map((pattern) => /^(?:\*|https?):\/\/(?:\*\.)?([^/*]+)/i.exec(pattern)?.[1])
+  .filter((host) => host && host !== "*")
+  .map((host) => host.toLowerCase());
+
+const availableSites = sites;
+
+function isAllowedDomain(domain) {
+  const normalized = normalizeDomain(domain).replace(/^\*\./, "");
+  if (!normalized) {
+    return false;
+  }
+
+  return manifestHosts.some(
+    (host) =>
+      host === normalized ||
+      host.endsWith(`.${normalized}`) ||
+      normalized.endsWith(`.${host}`),
+  );
+}
+
+/**
+ * Сервисы, которые документируются, хотя их собственных доменов в манифесте
+ * нет: альтернативные фронтенды (Invidious/Piped — YouTube, Proxitok — TikTok)
+ * и сервисы без своего домена. Всё остальное, чего нет в манифесте, в
+ * публичную документацию не попадает.
+ */
+const docExtras = [
+  "invidious",
+  "piped",
+  "proxitok",
+  "peertube",
+  "coursehunterlike",
+];
+
+function isDocumentedSite(site) {
+  if (docExtras.includes(site.host)) {
+    return true;
+  }
+
+  const extraDomains = siteData[site.host]?.domains;
+  const domains = extraDomains?.length ? extraDomains : site.domains;
+  // Сервисы без домена (`custom`/прямая ссылка, stub-патчи) не отбрасываем:
+  // судить о них по манифесту нечем.
+  const dotted = domains.filter((domain) => domain.includes("."));
+  return dotted.length === 0 || dotted.some(isAllowedDomain);
+}
 
 const MAX_VARIANTS = 256;
 const REGEX_FLAGS = "dgimsuvy";
@@ -610,9 +660,9 @@ ${locales.availabledDomains[lang]}:
 }
 
 function genMarkdown(supportedSites, lang = "ru") {
-  return mergeByHost(supportedSites).map((site) =>
-    renderSiteMarkdown(site, lang),
-  );
+  return mergeByHost(supportedSites)
+    .filter(isDocumentedSite)
+    .map((site) => renderSiteMarkdown(site, lang));
 }
 
 function getSupportedSites() {

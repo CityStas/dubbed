@@ -58,34 +58,6 @@ const siteData = {
       "/album/SHOWCASE_ID/video/VIDEO_ID",
     ],
   },
-  xvideos: {
-    paths: ["/VIDEO_ID/VIDEO_NAME"],
-  },
-  xhamster: {
-    paths: ["/videos/VIDEO_NAME-VIDEO_ID"],
-    domains: [
-      "xhamster.com",
-      "xhamster.desi",
-      "xhvid.com",
-      "*.xhamster.com",
-      "*.xhamster.desi",
-      "xhamster*.com",
-      "xhamster*.desi",
-    ],
-  },
-  spankbang: {
-    paths: [
-      "/VIDEO_ID/video",
-      "/VIDEO_ID/play/VIDEO_NAME",
-      "/VIDEO_ID/embed/VIDEO_NAME",
-      "/PLAYLIST_ID/playlist/PLAYLIST_NAME",
-    ],
-    domains: ["spankbang.com", "*.spankbang.com"],
-  },
-  rule34video: {
-    paths: ["/video/VIDEO_ID", "/videos/VIDEO_ID"],
-    domains: ["rule34video.com", "www.rule34video.com"],
-  },
   picarto: {
     paths: [
       "/CHANNEL_NAME",
@@ -104,10 +76,6 @@ const siteData = {
       "/LANG/paris-2024/replay/VIDEO_NAME",
     ],
     domains: ["olympics.com", "www.olympics.com"],
-  },
-  pornhub: {
-    paths: ["/view_video.php?viewkey=VIDEO_ID", "/embed/VIDEO_ID"],
-    limits: [locales.cantTranslatePHPremium],
   },
   twitter: {
     paths: ["/NAME/status/VIDEO_ID"],
@@ -144,9 +112,6 @@ const siteData = {
   coursera: {
     paths: ["/learn/NAME/lecture/XXXX"],
     limits: [locales.needBeLoggedIn, locales.videoWithoutSubs],
-  },
-  eporner: {
-    paths: ["/video-VIDEO_ID/NAME"],
   },
   peertube: {
     paths: ["/w/VIDEO_ID"],
@@ -228,14 +193,8 @@ const siteData = {
   sap: {
     paths: ["/courses/COURSE_NAME", "/courses/COURSE_NAME/LECTURE_NAME"],
   },
-  watchpornto: {
-    paths: ["/video/VIDEO_ID/VIDEO_NAME", "/embed/VIDEO_ID"],
-  },
   linkedin: {
     paths: ["/learning/COURSE_NAME/LECTURE_NAME"],
-  },
-  incestflix: {
-    paths: ["/watch/VIDEO_ID"],
   },
   dzen: {
     paths: ["/video/watch/VIDEO_ID"],
@@ -258,14 +217,8 @@ const siteData = {
   kickstarter: {
     paths: [],
   },
-  thisvid: {
-    paths: ["/videos/VIDEO_ID", "/embed/VIDEO_ID"],
-  },
   ign: {
     paths: ["/XXX/CONTENT_ID/video/XXX", "/videos/VIDEO_ID"],
-  },
-  bunkr: {
-    paths: ["/f/VIDEO_ID"],
   },
   imdb: {
     paths: ["/video/VIDEO_ID"],
@@ -319,6 +272,4 @@ const extraData = {
   // },
 };
 
-const sitesBlackList = ["porntn"];
-
-export { extraData, siteData, sitesBlackList };
+export { extraData, siteData };

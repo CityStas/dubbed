@@ -74,14 +74,6 @@
 - Не работает в предпросмотре видео
 - Для гарантированной работы скрипта необходимо [включить настройку "Обход Media CSP"](https://github.com/ilyhalight/voice-over-translation/wiki/%5BRU%5D-FAQ) в расширение или удалить CSP другим способом
 
-## Preservetube
-
-Статус: [✅] Работает
-
-Доступные (под)домены:
-
-- `preservetube.com`
-
 ## Zdf
 
 Статус: [✅] Работает
@@ -245,71 +237,6 @@
 
 - Для гарантированной работы скрипта необходимо [включить настройку "Обход Media CSP"](https://github.com/ilyhalight/voice-over-translation/wiki/%5BRU%5D-FAQ) в расширение или удалить CSP другим способом
 
-## Xvideos
-
-Статус: [✅] Работает
-
-Доступные (под)домены:
-
-- `xvideos*.com`
-- `www.xvideos*.com`
-- `xv-ru.com`
-- `www.xv-ru.com`
-
-Доступные пути:
-
-- /VIDEO_ID/VIDEO_NAME
-
-Ограничения:
-
-- Для гарантированной работы скрипта необходимо [включить настройку "Обход Media CSP"](https://github.com/ilyhalight/voice-over-translation/wiki/%5BRU%5D-FAQ) в расширение или удалить CSP другим способом
-
-## Xhamster
-
-Статус: [✅] Работает
-
-Доступные (под)домены:
-
-- `xhvid.com`
-- `*.xhamster.com`
-- `*.xhamster.desi`
-- `xhamster*.com`
-- `xhamster*.desi`
-
-Доступные пути:
-
-- /videos/VIDEO_NAME-VIDEO_ID
-
-## Spankbang
-
-Статус: [✅] Работает
-
-Доступные (под)домены:
-
-- `spankbang.com`
-- `*.spankbang.com`
-
-Доступные пути:
-
-- /VIDEO_ID/video
-- /VIDEO_ID/play/VIDEO_NAME
-- /VIDEO_ID/embed/VIDEO_NAME
-- /PLAYLIST_ID/playlist/PLAYLIST_NAME
-
-## Rule34video
-
-Статус: [✅] Работает
-
-Доступные (под)домены:
-
-- `rule34video.com`
-- `www.rule34video.com`
-
-Доступные пути:
-
-- /video/VIDEO_ID
-- /videos/VIDEO_ID
-
 ## Picarto
 
 Статус: [✅] Работает
@@ -342,24 +269,6 @@
 - /LANG/videos/VIDEO_NAME
 - /LANG/original-series/episode/VIDEO_NAME
 - /LANG/paris-2024/replay/VIDEO_NAME
-
-## Pornhub
-
-Статус: [✅] Работает
-
-Доступные (под)домены:
-
-- `*.pornhub.com`
-- `*.pornhub.org`
-
-Доступные пути:
-
-- /view_video.php?viewkey=VIDEO_ID
-- /embed/VIDEO_ID
-
-Ограничения:
-
-- Недоступен перевод для PH Premium
 
 ## Twitter
 
@@ -464,19 +373,6 @@
 
 - /video/VIDEO_ID
 - /embed/VIDEO_ID
-
-## Eporner
-
-Статус: [✅] Работает
-
-Доступные (под)домены:
-
-- `eporner.com`
-- `www.eporner.com`
-
-Доступные пути:
-
-- /video-VIDEO_ID/NAME
 
 ## Peertube
 
@@ -864,19 +760,6 @@
 - Необходимо быть авторизованным на сайте
 - Если у видео нет субтитров на вашем языке, то перевод не будет выполнен
 
-## Watchpornto
-
-Статус: [✅] Работает
-
-Доступные (под)домены:
-
-- `watchporn.to`
-
-Доступные пути:
-
-- /video/VIDEO_ID/VIDEO_NAME
-- /embed/VIDEO_ID
-
 ## Jove
 
 Статус: [✅] Работает
@@ -902,23 +785,6 @@
 Ограничения:
 
 - Для гарантированной работы скрипта необходимо [включить настройку "Обход Media CSP"](https://github.com/ilyhalight/voice-over-translation/wiki/%5BRU%5D-FAQ) в расширение или удалить CSP другим способом
-
-## Incestflix
-
-Статус: [✅] Работает
-
-Доступные (под)домены:
-
-- `incestflix.net`
-- `incestflix.to`
-- `incestflix.com`
-- `www.incestflix.net`
-- `www.incestflix.to`
-- `www.incestflix.com`
-
-Доступные пути:
-
-- /watch/VIDEO_ID
 
 ## Dzen
 
@@ -993,15 +859,6 @@
 - `rt.com`
 - `www.rt.com`
 
-## Noodlemagazine
-
-Статус: [✅] Работает
-
-Доступные (под)домены:
-
-- `noodlemagazine.com`
-- `hot.noodlemagazine.com`
-
 ## Bitview
 
 Статус: [✅] Работает
@@ -1025,20 +882,6 @@
 - `kickstarter.com`
 - `www.kickstarter.com`
 
-## Thisvid
-
-Статус: [✅] Работает
-
-Доступные (под)домены:
-
-- `thisvid.com`
-- `www.thisvid.com`
-
-Доступные пути:
-
-- /videos/VIDEO_ID
-- /embed/VIDEO_ID
-
 ## Ign
 
 Статус: [✅] Работает
@@ -1052,39 +895,6 @@
 
 - /XXX/CONTENT_ID/video/XXX
 - /videos/VIDEO_ID
-
-## Bunkr
-
-Статус: [✅] Работает
-
-Доступные (под)домены:
-
-- `bunkr.site`
-- `bunkr.black`
-- `bunkr.cat`
-- `bunkr.media`
-- `bunkr.red`
-- `bunkr.ws`
-- `bunkr.org`
-- `bunkr.sk`
-- `bunkr.si`
-- `bunkr.su`
-- `bunkr.ci`
-- `bunkr.cr`
-- `bunkr.fi`
-- `bunkr.ph`
-- `bunkr.pk`
-- `bunkr.ps`
-- `bunkr.ru`
-- `bunkr.la`
-- `bunkr.is`
-- `bunkr.to`
-- `bunkr.ac`
-- `bunkr.ax`
-
-Доступные пути:
-
-- /f/VIDEO_ID
 
 ## Imdb
 

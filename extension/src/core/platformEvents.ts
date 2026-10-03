@@ -9,9 +9,6 @@ const defaultPlatformConfig: Required<PlatformEventOverrides> = {
 };
 
 const platformOverrides: Record<string, PlatformEventOverrides> = {
-  xvideos: {
-    allowTouchMoveHandler: false,
-  },
   youtube: {
     disableContainerDrag: true,
   },

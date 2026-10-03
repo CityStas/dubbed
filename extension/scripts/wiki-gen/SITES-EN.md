@@ -74,14 +74,6 @@ Limitations:
 - Doesn't work in the video preview
 - To ensure that the script works, you need to [enable the "Bypass Media CSP" setting](https://github.com/ilyhalight/voice-over-translation/wiki/%5BEN%5D-FAQ) in the extension or delete the CSP in another way
 
-## Preservetube
-
-Status: [✅] Working
-
-Available (sub)domains:
-
-- `preservetube.com`
-
 ## Zdf
 
 Status: [✅] Working
@@ -245,71 +237,6 @@ Limitations:
 
 - To ensure that the script works, you need to [enable the "Bypass Media CSP" setting](https://github.com/ilyhalight/voice-over-translation/wiki/%5BEN%5D-FAQ) in the extension or delete the CSP in another way
 
-## Xvideos
-
-Status: [✅] Working
-
-Available (sub)domains:
-
-- `xvideos*.com`
-- `www.xvideos*.com`
-- `xv-ru.com`
-- `www.xv-ru.com`
-
-Available paths:
-
-- /VIDEO_ID/VIDEO_NAME
-
-Limitations:
-
-- To ensure that the script works, you need to [enable the "Bypass Media CSP" setting](https://github.com/ilyhalight/voice-over-translation/wiki/%5BEN%5D-FAQ) in the extension or delete the CSP in another way
-
-## Xhamster
-
-Status: [✅] Working
-
-Available (sub)domains:
-
-- `xhvid.com`
-- `*.xhamster.com`
-- `*.xhamster.desi`
-- `xhamster*.com`
-- `xhamster*.desi`
-
-Available paths:
-
-- /videos/VIDEO_NAME-VIDEO_ID
-
-## Spankbang
-
-Status: [✅] Working
-
-Available (sub)domains:
-
-- `spankbang.com`
-- `*.spankbang.com`
-
-Available paths:
-
-- /VIDEO_ID/video
-- /VIDEO_ID/play/VIDEO_NAME
-- /VIDEO_ID/embed/VIDEO_NAME
-- /PLAYLIST_ID/playlist/PLAYLIST_NAME
-
-## Rule34video
-
-Status: [✅] Working
-
-Available (sub)domains:
-
-- `rule34video.com`
-- `www.rule34video.com`
-
-Available paths:
-
-- /video/VIDEO_ID
-- /videos/VIDEO_ID
-
 ## Picarto
 
 Status: [✅] Working
@@ -342,24 +269,6 @@ Available paths:
 - /LANG/videos/VIDEO_NAME
 - /LANG/original-series/episode/VIDEO_NAME
 - /LANG/paris-2024/replay/VIDEO_NAME
-
-## Pornhub
-
-Status: [✅] Working
-
-Available (sub)domains:
-
-- `*.pornhub.com`
-- `*.pornhub.org`
-
-Available paths:
-
-- /view_video.php?viewkey=VIDEO_ID
-- /embed/VIDEO_ID
-
-Limitations:
-
-- Translation is not available for PH Premium
 
 ## Twitter
 
@@ -464,19 +373,6 @@ Available paths:
 
 - /video/VIDEO_ID
 - /embed/VIDEO_ID
-
-## Eporner
-
-Status: [✅] Working
-
-Available (sub)domains:
-
-- `eporner.com`
-- `www.eporner.com`
-
-Available paths:
-
-- /video-VIDEO_ID/NAME
 
 ## Peertube
 
@@ -864,19 +760,6 @@ Limitations:
 - You must be logged in to the site
 - If the video doesn't have subtitles in your language, then the translation will not be performed
 
-## Watchpornto
-
-Status: [✅] Working
-
-Available (sub)domains:
-
-- `watchporn.to`
-
-Available paths:
-
-- /video/VIDEO_ID/VIDEO_NAME
-- /embed/VIDEO_ID
-
 ## Jove
 
 Status: [✅] Working
@@ -902,23 +785,6 @@ Available paths:
 Limitations:
 
 - To ensure that the script works, you need to [enable the "Bypass Media CSP" setting](https://github.com/ilyhalight/voice-over-translation/wiki/%5BEN%5D-FAQ) in the extension or delete the CSP in another way
-
-## Incestflix
-
-Status: [✅] Working
-
-Available (sub)domains:
-
-- `incestflix.net`
-- `incestflix.to`
-- `incestflix.com`
-- `www.incestflix.net`
-- `www.incestflix.to`
-- `www.incestflix.com`
-
-Available paths:
-
-- /watch/VIDEO_ID
 
 ## Dzen
 
@@ -993,15 +859,6 @@ Available (sub)domains:
 - `rt.com`
 - `www.rt.com`
 
-## Noodlemagazine
-
-Status: [✅] Working
-
-Available (sub)domains:
-
-- `noodlemagazine.com`
-- `hot.noodlemagazine.com`
-
 ## Bitview
 
 Status: [✅] Working
@@ -1025,20 +882,6 @@ Available (sub)domains:
 - `kickstarter.com`
 - `www.kickstarter.com`
 
-## Thisvid
-
-Status: [✅] Working
-
-Available (sub)domains:
-
-- `thisvid.com`
-- `www.thisvid.com`
-
-Available paths:
-
-- /videos/VIDEO_ID
-- /embed/VIDEO_ID
-
 ## Ign
 
 Status: [✅] Working
@@ -1052,39 +895,6 @@ Available paths:
 
 - /XXX/CONTENT_ID/video/XXX
 - /videos/VIDEO_ID
-
-## Bunkr
-
-Status: [✅] Working
-
-Available (sub)domains:
-
-- `bunkr.site`
-- `bunkr.black`
-- `bunkr.cat`
-- `bunkr.media`
-- `bunkr.red`
-- `bunkr.ws`
-- `bunkr.org`
-- `bunkr.sk`
-- `bunkr.si`
-- `bunkr.su`
-- `bunkr.ci`
-- `bunkr.cr`
-- `bunkr.fi`
-- `bunkr.ph`
-- `bunkr.pk`
-- `bunkr.ps`
-- `bunkr.ru`
-- `bunkr.la`
-- `bunkr.is`
-- `bunkr.to`
-- `bunkr.ac`
-- `bunkr.ax`
-
-Available paths:
-
-- /f/VIDEO_ID
 
 ## Imdb
 
