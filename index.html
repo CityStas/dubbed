@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>DUBBED - быстрый перевод и озвучка видео в браузере</title>
-<meta name="description" content="Бесплатное расширение для Chrome и Firefox. Быстрая AI-озвучка фильмов и сериалов прямо в браузере - HDrezka, VK, Telegram, YouTube и другие." />
+<meta name="description" content="Бесплатное расширение для Chrome и Firefox. Быстрая AI-озвучка фильмов и сериалов прямо в браузере - HDrezka, VK, Telegram, YouTube и другие. Некоммерческий проект для ознакомительных целей." />
 <link rel="icon" href="assets/dubbed-128.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -134,6 +134,8 @@
   .foot{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
   .foot .brand{font-size:17px}
   .foot p{font-size:13px;color:var(--text-muted)}
+  .disclaimer{margin-top:20px;padding-top:20px;border-top:1px solid var(--border);font-size:12px;line-height:1.6;color:var(--text-muted);opacity:.85;max-width:860px}
+  .disclaimer b{color:var(--text);font-weight:600}
 
   /* grain */
   .grain::after{content:'';position:absolute;inset:0;pointer-events:none;opacity:.03;z-index:1;
@@ -202,7 +204,7 @@
         </a>
       </div>
 
-      <p class="free-note"><b>Бесплатно.</b> Без регистрации и подписок.</p>
+      <p class="free-note">Проект для ознакомительных целей. Некоммерческое использование.<br>Озвучка — нейросеть <b>Яндекс</b> (TTS API).</p>
 
       <div class="marquee" aria-hidden="true">
         <div class="track">
@@ -311,6 +313,9 @@
     </a>
     <p>Перевод и озвучка видео в браузере. Бесплатно.</p>
     <p>© 2026 DUBBED | Автор: CITYSTAS</p>
+  </div>
+  <div class="wrap disclaimer">
+    <b>Некоммерческий проект.</b> Расширение создано в ознакомительных целях и не преследует коммерческой выгоды: оно бесплатно, без регистрации, рекламы и подписок. Перевод и озвучка выполняются сервисом <b>Яндекс</b> (TTS API) через публичный клиентский SDK; права на сервис, голоса и технологию принадлежат ООО «Яндекс». Проект не связан с Яндексом, не аффилирован с ним и не одобрен им. Все права на видео и аудио принадлежат их правообладателям.
   </div>
 </footer>
 
