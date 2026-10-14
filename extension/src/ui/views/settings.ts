@@ -666,8 +666,9 @@ export class SettingsView {
       labelHtml: localizationProvider.get("DubbedAutoSubtitles"),
       checked: this.data.autoSubtitles,
     });
-    // "Subtitles on open" is visible again (2026-10-15).
-    this.autoSubtitlesCheckbox.hidden = false;
+    // "Subtitles on open" снова скрыт (2026-10-15): в «Расширенных настройках»
+    // из субтитров оставлен только выбор языка, остальное — лишнее.
+    this.autoSubtitlesCheckbox.hidden = true;
     const dontTranslateLanguages = this.data.dontTranslateLanguages ?? [];
     this.dontTranslateLanguagesCheckbox = new Checkbox({
       labelHtml: localizationProvider.get("DontTranslateSelectedLanguages"),
@@ -896,6 +897,18 @@ export class SettingsView {
       this.subtitlesFontSizeSlider.container,
       this.subtitlesBackgroundOpacitySlider.container,
     );
+    // В «Расширенных настройках» из субтитров оставлен ТОЛЬКО выбор языка
+    // (2026-10-15, просьба пользователя). Оформление, формат загрузки и
+    // поведение субтитров прячем — как и было до возврата субтитров.
+    // Контролы остаются в DOM и с привязками к хранилищу: прячем через
+    // `hidden`, чтобы ничего не сломать и легко вернуть обратно.
+    this.subtitlesDownloadFormatSelect.hidden = true;
+    this.subtitlesFontFamilySelect.hidden = true;
+    this.subtitlesHighlightWordsCheckbox.hidden = true;
+    this.subtitlesSmartLayoutCheckbox.hidden = true;
+    this.subtitlesMaxLengthSlider.hidden = true;
+    this.subtitlesFontSizeSlider.hidden = true;
+    this.subtitlesBackgroundOpacitySlider.hidden = true;
     this.translateHotkeyButton = new HotkeyButton({
       labelHtml: localizationProvider.get("translateVideo"),
       key: this.data.translationHotkey,
