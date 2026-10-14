@@ -882,11 +882,24 @@ const SUBTITLES_REQUEST_TIMEOUT_MS = 20_000;
  */
 const SUBTITLES_WAIT_POLL_MS = 5_000;
 /**
- * Общий бюджет ожидания готовности субтитров. Ограничен, чтобы клик по кнопке
- * субтитров не висел бесконечно; по истечении — ошибка (пустой результат НЕ
- * кэшируется, см. `loadSubtitles`), поэтому повторный клик снова спросит Яндекс.
+ * Общий бюджет ожидания готовности субтитров.
+ *
+ * Был 2 минуты, но это оказалось хуже, чем польза: пользователь видел только
+ * бесконечный спиннер и в итоге ничего. Яндекс может готовить ASR всего фильма
+ * дольше, чем разумно ждать внутри клика, поэтому ждём недолго, а дальше честно
+ * говорим «ещё готовит, попробуйте позже» (см. `enableSubtitlesForCurrentLangPair`).
+ * Пустой результат при этом НЕ кэшируется (см. `loadSubtitles`), поэтому
+ * повторный клик снова спросит Яндекс.
  */
-const SUBTITLES_WAIT_MAX_TOTAL_MS = 2 * 60 * 1000;
+const SUBTITLES_WAIT_MAX_TOTAL_MS = 40 * 1000;
+
+/**
+ * Маркер «Яндекс ещё готовит субтитры» — состояние «в работе», а не поломка.
+ * Вынесен в константу, потому что его различают по тексту на вызывающей стороне
+ * (чтобы показать «попробуйте позже» вместо общей ошибки).
+ */
+export const SUBTITLES_STILL_PREPARING_MESSAGE =
+  "Yandex subtitles are still being prepared";
 
 export const SubtitlesProcessor = {
   processTokens(
@@ -1087,7 +1100,7 @@ export const SubtitlesProcessor = {
           // Бросаем, а не возвращаем пустой список: `loadSubtitles` кэширует
           // ЛЮБОЙ успешный ответ, в том числе пустой, и тогда следующий клик
           // уже не спросит Яндекс.
-          throw new Error("Yandex subtitles are still being prepared");
+          throw new Error(SUBTITLES_STILL_PREPARING_MESSAGE);
         }
 
         if (attempt === 1) {
@@ -1107,7 +1120,7 @@ export const SubtitlesProcessor = {
         // Своё «ещё готовится» (бюджет исчерпан) — уже залогировано, пробрасываем.
         if (
           error instanceof Error &&
-          error.message === "Yandex subtitles are still being prepared"
+          error.message === SUBTITLES_STILL_PREPARING_MESSAGE
         ) {
           throw error;
         }

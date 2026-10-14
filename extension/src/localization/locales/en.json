@@ -41,6 +41,8 @@
   "DubbedNoVideoIDFound": "No video ID found",
   "DubbedSubtitles": "Subtitles",
   "DubbedSubtitlesDisabled": "Disabled",
+  "DubbedSubtitlesNotReady": "Yandex is still preparing the subtitles — try again in a minute",
+  "DubbedSubtitlesUnavailable": "No subtitles found for this video",
   "DubbedDefaultSubtitlesLanguage": "Default subtitle language",
   "DubbedOriginalVideoLanguage": "Original video language",
   "DubbedSubtitlesMaxLength": "Subtitles max length",

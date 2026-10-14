@@ -1,6 +1,9 @@
 import YoutubeHelper from "@vot.js/ext/helpers/youtube";
 import { localizationProvider } from "../../localization/localizationProvider";
-import { SubtitlesProcessor } from "../../subtitles/processor";
+import {
+  SUBTITLES_STILL_PREPARING_MESSAGE,
+  SubtitlesProcessor,
+} from "../../subtitles/processor";
 import type {
   SubtitleDescriptor,
   VideoDataForSubtitles,
@@ -21,6 +24,16 @@ import {
 export { resolveSubtitlesLanguage } from "./subtitlesShared";
 
 const subtitlesSelectionRequestVersion = new WeakMap<VideoHandler, number>();
+
+/**
+ * Идентификатор дорожки, реально включённой сейчас.
+ *
+ * `updateSubtitlesLangSelect()` пересобирает список опций (индексы могут
+ * сдвинуться), поэтому хранить выбор как индекс нельзя — храним «отпечаток»
+ * дорожки и находим её заново. Нужно, чтобы уже включённые субтитры не гасли
+ * при следующей пересборке списка.
+ */
+const activeSubtitlesDescriptorKey = new WeakMap<VideoHandler, string>();
 
 function getPreferredSubtitlesLanguage(
   handler: VideoHandler,
@@ -150,6 +163,7 @@ function clearSelectedSubtitles(
   overlayView.downloadSubtitlesButton.hidden = true;
   overlayView.syncSubtitlesButtonState(false);
   handler.yandexSubtitles = null;
+  activeSubtitlesDescriptorKey.delete(handler);
   return handler;
 }
 
@@ -202,6 +216,10 @@ export async function changeSubtitlesLang(
   }
 
   this.yandexSubtitles = fetchedSubtitles;
+  activeSubtitlesDescriptorKey.set(
+    this,
+    buildSubtitleDescriptorKey(subtitlesObj),
+  );
   this.getSubtitlesWidget().setContent(
     this.yandexSubtitles,
     subtitlesObj.language,
@@ -220,6 +238,26 @@ export async function updateSubtitlesLangSelect(this: VideoHandler) {
   const subtitleDescriptors = getIndexedSubtitleDescriptors(this.subtitles);
   const updatedOptions = buildSubtitlesSelectOptions(subtitleDescriptors);
   overlayView.subtitlesSelect.updateItems(updatedOptions);
+
+  // `updateItems` пересобирает список и сбрасывает выбор на «Отключены»
+  // (`buildSubtitlesSelectOptions` помечает его selected). Раньше здесь вдобавок
+  // безусловно вызывался `changeSubtitlesLang("disabled")` — и дорожка, которую
+  // только что включила кнопка субтитров, гасла сразу после загрузки. Это и был
+  // симптом «идёт какая-то загрузка и всё, потом сбрасывается».
+  const activeKey = activeSubtitlesDescriptorKey.get(this);
+  if (activeKey) {
+    const stillPresent = subtitleDescriptors.find(
+      ({ descriptor }) => buildSubtitleDescriptorKey(descriptor) === activeKey,
+    );
+    if (stillPresent) {
+      overlayView.subtitlesSelect.setSelectedValue(String(stillPresent.index));
+      overlayView.syncSubtitlesButtonState(true);
+      return;
+    }
+
+    activeSubtitlesDescriptorKey.delete(this);
+  }
+
   await this.changeSubtitlesLang(DISABLED_SUBTITLES_VALUE);
 }
 
@@ -262,14 +300,40 @@ export async function ensureSubtitlesForCurrentLangPair(this: VideoHandler) {
  * subtitles track in the target language.
  * For same-language pair (from == to), prefer site subtitles before Yandex.
  */
-export async function enableSubtitlesForCurrentLangPair(this: VideoHandler) {
+export async function enableSubtitlesForCurrentLangPair(
+  this: VideoHandler,
+  options: { notify?: boolean } = {},
+) {
   const overlayView = this.uiManager.dubbedOverlayView;
   if (!overlayView?.subtitlesSelect) return this;
 
+  let stillPreparing = false;
   try {
     await ensureSubtitlesForCurrentLangPair.call(this);
-  } catch {
-    // If loading fails, we can't enable anything.
+  } catch (error) {
+    // «Яндекс ещё готовит» — не поломка, но включать пока нечего.
+    stillPreparing =
+      error instanceof Error &&
+      error.message === SUBTITLES_STILL_PREPARING_MESSAGE;
+    if (!stillPreparing) {
+      debug.log("[Dubbed] Failed to prepare subtitles", error);
+    }
+  }
+
+  const indexedSubtitles = getIndexedSubtitleDescriptors(this.subtitles);
+  if (!indexedSubtitles.length) {
+    // Список пуст: либо Яндекс ещё готовит дорожки, либо их нет вовсе.
+    // Раньше в этом месте было молчаливое `return` — кнопка «загружалась» и
+    // ничего не делала. Теперь честно сообщаем, что происходит.
+    //
+    // Без `videoId` мы ещё не знаем, о каком видео речь (клик сразу после
+    // открытия страницы) — тогда молчим, а не пугаем «субтитров нет».
+    if (options.notify !== false && this.videoData?.videoId) {
+      this.notifier.subtitlesUnavailable({
+        videoId: this.videoData.videoId,
+        pending: stillPreparing,
+      });
+    }
     return this;
   }
 
@@ -280,11 +344,16 @@ export async function enableSubtitlesForCurrentLangPair(this: VideoHandler) {
     return this;
   }
 
-  const bestIdx = pickBestSubtitlesIndex(
-    getIndexedSubtitleDescriptors(this.subtitles),
-    fromLang,
-    toLang,
-  );
+  // 1) дорожка в целевом языке — для пары «Авто → Русский» это русская, в том
+  //    числе переведённая Яндексом (`translatedLanguage === "ru"`);
+  // 2) если целевой дорожки нет вовсе — оригинальная, чтобы клик всё-таки
+  //    что-то включил, а не закончился тишиной;
+  // 3) в крайнем случае — первая доступная.
+  const bestIdx =
+    pickBestSubtitlesIndex(indexedSubtitles, fromLang, toLang) ??
+    pickBestSubtitlesIndex(indexedSubtitles, fromLang, fromLang) ??
+    indexedSubtitles[0]?.index ??
+    null;
   if (bestIdx == null) {
     return this;
   }
@@ -312,7 +381,8 @@ export async function refreshAutoSubtitlesForCurrentLangPair(
     return this;
   }
 
-  await this.enableSubtitlesForCurrentLangPair();
+  // Авто-включение — фон, пользователю про него сообщать не нужно.
+  await this.enableSubtitlesForCurrentLangPair({ notify: false });
   return this;
 }
 
@@ -336,7 +406,9 @@ export async function toggleSubtitlesForCurrentLangPair(this: VideoHandler) {
     return this;
   }
 
-  await this.enableSubtitlesForCurrentLangPair();
+  // Клик по кнопке/хоткею — явное действие пользователя: если субтитры не
+  // удалось включить, он должен об этом узнать, а не гадать, почему тишина.
+  await this.enableSubtitlesForCurrentLangPair({ notify: true });
   return this;
 }
 
@@ -398,6 +470,18 @@ export async function loadSubtitles(this: VideoHandler) {
     console.error("[Dubbed] Failed to load subtitles:", error);
     this.subtitles = [];
     this.subtitlesCacheKey = null;
+    await this.updateSubtitlesLangSelect();
+    // «Яндекс ещё готовит» — состояние «в работе», а не поломка. Пробрасываем
+    // наверх, чтобы вызывающий (кнопка субтитров) сказал «попробуйте позже»,
+    // а не делал вид, что всё хорошо. Пустой список при этом НЕ кэшируется,
+    // поэтому повторный клик снова спросит Яндекс.
+    if (
+      error instanceof Error &&
+      error.message === SUBTITLES_STILL_PREPARING_MESSAGE
+    ) {
+      throw error;
+    }
+    return;
   }
   await this.updateSubtitlesLangSelect();
 }

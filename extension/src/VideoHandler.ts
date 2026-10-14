@@ -997,9 +997,12 @@ export class VideoHandler {
    *
    * Used by the subtitles hotkey: prefers Yandex captions for the exact pair,
    * then falls back to any captions in the target language.
+   *
+   * @param options.notify — показать уведомление, если включить нечего
+   *   (по умолчанию да; авто-включение передаёт `false`, чтобы не шуметь).
    */
-  enableSubtitlesForCurrentLangPair() {
-    return enableSubtitlesForCurrentLangPairImpl.call(this);
+  enableSubtitlesForCurrentLangPair(options: { notify?: boolean } = {}) {
+    return enableSubtitlesForCurrentLangPairImpl.call(this, options);
   }
 
   /**

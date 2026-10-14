@@ -232,6 +232,49 @@ export class Notifier {
     );
   }
 
+  /**
+   * Субтитры не удалось включить.
+   *
+   * `pending: true` — Яндекс ответил `waiting: true` («ещё готовлю»), то есть
+   * дорожки появятся позже; `pending: false` — дорожек нет вовсе. Раньше оба
+   * случая выглядели одинаково: спиннер на кнопке, а потом тишина.
+   */
+  subtitlesUnavailable(params: { videoId?: string; pending?: boolean }): void {
+    const { videoId, pending } = params;
+
+    const text = pending
+      ? safeL10n(
+          "DubbedSubtitlesNotReady",
+          "Yandex is still preparing the subtitles — try again in a minute",
+        )
+      : safeL10n(
+          "DubbedSubtitlesUnavailable",
+          "No subtitles found for this video",
+        );
+
+    this.send(
+      {
+        text,
+        title: getScriptTitle(),
+        timeout: 8000,
+        silent: true,
+        tag: `DubbedsubtitlesUnavailable_${videoId || "unknown"}`,
+        onclick: () => {
+          try {
+            globalThis.focus();
+          } catch {
+            /* ignore */
+          }
+        },
+      },
+      // Клик по кнопке можно повторить сразу, но не заваливать уведомлениями.
+      {
+        key: `subtitles_unavailable_${videoId || "unknown"}`,
+        cooldownMs: 15_000,
+      },
+    );
+  }
+
   translationFailed(params: { videoId?: string; message?: unknown }): void {
     const { videoId, message } = params;
 

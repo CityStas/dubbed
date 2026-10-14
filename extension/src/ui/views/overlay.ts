@@ -12,6 +12,7 @@ import type {
   OverlayViewProps,
 } from "../../types/views/overlay";
 import ui from "../../ui";
+import debug from "../../utils/debug";
 import { containsCrossShadow, getDeepActiveElement } from "../../utils/dom";
 import { hasTouchScreen, isTouchFirstInput } from "../../utils/inputDevice";
 import type { IntervalIdleChecker } from "../../utils/intervalIdleChecker";
@@ -1082,6 +1083,10 @@ export class OverlayView {
       dialog.footerContainer.appendChild(loadingEl);
       try {
         await this.videoHandler.ensureSubtitlesForCurrentLangPair();
+      } catch (error) {
+        // «Яндекс ещё готовит» прилетает исключением (см. `loadSubtitles`):
+        // список просто останется с одним пунктом «Отключены».
+        debug.log("[Dubbed] Failed to prepare subtitles for the dialog", error);
       } finally {
         loadingEl.remove();
         if (this.dubbedButton) {

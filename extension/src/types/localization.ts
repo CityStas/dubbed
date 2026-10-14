@@ -102,6 +102,8 @@ export type Phrase =
   | "DubbedNoVideoIDFound"
   | "DubbedSubtitles"
   | "DubbedSubtitlesDisabled"
+  | "DubbedSubtitlesNotReady"
+  | "DubbedSubtitlesUnavailable"
   | "DubbedDefaultSubtitlesLanguage"
   | "DubbedOriginalVideoLanguage"
   | "DubbedSubtitlesMaxLength"
@@ -368,6 +370,8 @@ export type Phrases = {
   DubbedNoVideoIDFound: string;
   DubbedSubtitles: string;
   DubbedSubtitlesDisabled: string;
+  DubbedSubtitlesNotReady: string;
+  DubbedSubtitlesUnavailable: string;
   DubbedDefaultSubtitlesLanguage: string;
   DubbedOriginalVideoLanguage: string;
   DubbedSubtitlesMaxLength: string;

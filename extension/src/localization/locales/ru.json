@@ -39,6 +39,8 @@
   "DubbedNoVideoIDFound": "Не найден идентификатор (ID) видео",
   "DubbedSubtitles": "Субтитры",
   "DubbedSubtitlesDisabled": "Отключены",
+  "DubbedSubtitlesNotReady": "Яндекс ещё готовит субтитры — попробуйте через минуту",
+  "DubbedSubtitlesUnavailable": "Субтитры для этого видео не найдены",
   "DubbedDefaultSubtitlesLanguage": "Язык субтитров по умолчанию",
   "DubbedOriginalVideoLanguage": "Язык оригинального видео",
   "DubbedSubtitlesMaxLength": "Максимальная длина субтитров",
