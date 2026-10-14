@@ -867,6 +867,27 @@ const buildYandexSubtitles = (
   return subtitles;
 };
 
+/**
+ * Таймаут ОДНОГО HTTP-запроса субтитров (идёт через мост в service worker).
+ * Было жёстко 5 c: на длинном фильме первый ответ не укладывался, и пользователь
+ * получал «Failed to get Yandex subtitles: timeout» без единой повторной попытки.
+ */
+const SUBTITLES_REQUEST_TIMEOUT_MS = 20_000;
+/**
+ * Яндекс отвечает `waiting: true`, пока ГОТОВИТ субтитры. Это состояние «в
+ * работе», а не ошибка (аналог `status 2` у перевода), но раньше мы писали в
+ * консоль `Failed to get Yandex subtitles` и сдавались на ПЕРВОЙ же такой
+ * итерации — на rezka это выглядело как «субтитры не работают», хотя через
+ * пару минут Яндекс их отдаёт. Теперь опрашиваем сервер до готовности.
+ */
+const SUBTITLES_WAIT_POLL_MS = 5_000;
+/**
+ * Общий бюджет ожидания готовности субтитров. Ограничен, чтобы клик по кнопке
+ * субтитров не висел бесконечно; по истечении — ошибка (пустой результат НЕ
+ * кэшируется, см. `loadSubtitles`), поэтому повторный клик снова спросит Яндекс.
+ */
+const SUBTITLES_WAIT_MAX_TOTAL_MS = 2 * 60 * 1000;
+
 export const SubtitlesProcessor = {
   processTokens(
     subtitles: ProcessedSubtitles,
@@ -1009,41 +1030,111 @@ export const SubtitlesProcessor = {
       subtitles: extraSubtitles = [],
     } = videoData;
 
-    try {
-      const requestPayload: SubtitlesRequestPayload = {
-        videoData: {
-          host: host as SubtitlesRequestPayload["videoData"]["host"],
-          url,
-          videoId,
-          duration,
-        },
-        requestLang: requestLang as SubtitlesRequestPayload["requestLang"],
-      };
+    const requestPayload: SubtitlesRequestPayload = {
+      videoData: {
+        host: host as SubtitlesRequestPayload["videoData"]["host"],
+        url,
+        videoId,
+        duration,
+      },
+      requestLang: requestLang as SubtitlesRequestPayload["requestLang"],
+    };
 
-      const response = await Promise.race([
+    const requestOnce = () =>
+      Promise.race([
         client.getSubtitles(requestPayload),
         new Promise<never>((_, reject) => {
-          setTimeout(() => reject(new Error("Timeout")), 5000);
+          setTimeout(
+            () => reject(new Error("Timeout")),
+            SUBTITLES_REQUEST_TIMEOUT_MS,
+          );
         }),
       ]);
 
-      const res = response as SubtitlesResponsePayload;
-      debug.log("[Dubbed] Subtitles response:", res);
-      if (res.waiting) {
-        console.error("[Dubbed] Failed to get Yandex subtitles");
-      }
+    const startedAt = Date.now();
+    let attempt = 0;
 
-      const yandexSubs = buildYandexSubtitles(res);
+    while (true) {
+      attempt += 1;
+      try {
+        const res = (await requestOnce()) as SubtitlesResponsePayload;
+        debug.log("[Dubbed] Subtitles response:", res);
 
-      const all = [...yandexSubs, ...extraSubtitles];
-      return sortSubtitles(all, requestLang);
-    } catch (error) {
-      let message = "Error in getSubtitles function";
-      if (error instanceof Error && error.message === "Timeout") {
-        message = "Failed to get Yandex subtitles: timeout";
+        const yandexSubs = buildYandexSubtitles(res);
+
+        // Готово — либо Яндекс отдал ЧАСТИЧНУЮ выдачу (`waiting` ещё true, но
+        // какие-то дорожки уже есть, аналог `status 5` у перевода). Тогда не
+        // ждём остальное, отдаём то, что пришло.
+        if (!res.waiting || yandexSubs.length > 0) {
+          const all = [...yandexSubs, ...extraSubtitles];
+          return sortSubtitles(all, requestLang);
+        }
+
+        const elapsedMs = Date.now() - startedAt;
+        const canWaitMore =
+          elapsedMs + attempt * SUBTITLES_WAIT_POLL_MS <
+          SUBTITLES_WAIT_MAX_TOTAL_MS;
+
+        if (!canWaitMore) {
+          console.warn(
+            "[Dubbed] Yandex subtitles are still being prepared",
+            { videoId, attempts: attempt, elapsedMs },
+          );
+          // Субтитры сайта (если есть) полезнее, чем ничего.
+          if (extraSubtitles.length > 0) {
+            return sortSubtitles([...extraSubtitles], requestLang);
+          }
+          // Бросаем, а не возвращаем пустой список: `loadSubtitles` кэширует
+          // ЛЮБОЙ успешный ответ, в том числе пустой, и тогда следующий клик
+          // уже не спросит Яндекс.
+          throw new Error("Yandex subtitles are still being prepared");
+        }
+
+        if (attempt === 1) {
+          console.info(
+            "[Dubbed] Yandex subtitles are being prepared, waiting for them…",
+            {
+              videoId,
+              budgetMs: SUBTITLES_WAIT_MAX_TOTAL_MS,
+            },
+          );
+        }
+
+        await new Promise((resolve) =>
+          setTimeout(resolve, SUBTITLES_WAIT_POLL_MS),
+        );
+      } catch (error) {
+        // Своё «ещё готовится» (бюджет исчерпан) — уже залогировано, пробрасываем.
+        if (
+          error instanceof Error &&
+          error.message === "Yandex subtitles are still being prepared"
+        ) {
+          throw error;
+        }
+
+        const elapsedMs = Date.now() - startedAt;
+        const canRetry =
+          elapsedMs + attempt * SUBTITLES_WAIT_POLL_MS <
+          SUBTITLES_WAIT_MAX_TOTAL_MS;
+
+        if (!canRetry) {
+          const message =
+            error instanceof Error && error.message === "Timeout"
+              ? "Failed to get Yandex subtitles: timeout"
+              : "Error in getSubtitles function";
+          console.error(`[Dubbed] ${message}`, error);
+          throw error;
+        }
+
+        debug.log("[Dubbed] Subtitles request failed, retrying", {
+          videoId,
+          attempt,
+          error,
+        });
+        await new Promise((resolve) =>
+          setTimeout(resolve, SUBTITLES_WAIT_POLL_MS),
+        );
       }
-      console.error(`[Dubbed] ${message}`, error);
-      throw error;
     }
   },
 };

@@ -206,7 +206,22 @@ export class UIManager {
           return;
         }
 
-        await this.videoHandler.toggleSubtitlesForCurrentLangPair();
+        // Первое включение субтитров может занять время: Яндекс отдаёт их не
+        // сразу (`waiting: true`), и `SubtitlesProcessor.getSubtitles` теперь
+        // опрашивает сервер до готовности. Без спиннера кнопка выглядит
+        // «мёртвой» всё это время.
+        const dubbedButton = this.dubbedOverlayView?.dubbedButton;
+        const prevLoading = dubbedButton?.loading ?? false;
+        if (dubbedButton) {
+          dubbedButton.loading = true;
+        }
+        try {
+          await this.videoHandler.toggleSubtitlesForCurrentLangPair();
+        } finally {
+          if (dubbedButton) {
+            dubbedButton.loading = prevLoading;
+          }
+        }
       })
       .addEventListener("click:settings", async () => {
         this.videoHandler?.subtitlesWidget?.releaseTooltip();
