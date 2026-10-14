@@ -650,8 +650,9 @@ export class SettingsView {
     this.initAccountControls();
     // Hidden: "My Account" block is not displayed in this build.
     accountSection.container.hidden = true;
-    // Gear settings show only the translation block (+ language & about below).
-    subtitlesSection.container.hidden = true;
+    // Subtitles block is shown again (2026-10-15) — вместе с иконкой субтитров
+    // на кнопке это и есть «вернуть возможность включить субтитры».
+    subtitlesSection.container.hidden = false;
     hotkeysSection.container.hidden = true;
     proxySection.container.hidden = true;
     miscSection.container.hidden = true;
@@ -665,8 +666,8 @@ export class SettingsView {
       labelHtml: localizationProvider.get("DubbedAutoSubtitles"),
       checked: this.data.autoSubtitles,
     });
-    // Hidden: "Subtitles on open" is not displayed in this build.
-    this.autoSubtitlesCheckbox.hidden = true;
+    // "Subtitles on open" is visible again (2026-10-15).
+    this.autoSubtitlesCheckbox.hidden = false;
     const dontTranslateLanguages = this.data.dontTranslateLanguages ?? [];
     this.dontTranslateLanguagesCheckbox = new Checkbox({
       labelHtml: localizationProvider.get("DontTranslateSelectedLanguages"),

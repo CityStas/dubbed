@@ -29,21 +29,36 @@ export function toBridgeMessage(payload: AnyObject): BridgeMarkedMessage {
   return { ...payload, [MARK]: true };
 }
 
+/**
+ * Origin, который нельзя передать в `postMessage` как targetOrigin.
+ *
+ * `"null"` — about:blank / about:srcdoc / sandboxed frames.
+ * `"file://"` — документы `file://`: `location.origin` сериализуется как
+ * строка `"file://"`, а реальный (opaque) origin окна — `"null"`. Передача
+ * `"file://"` в качестве targetOrigin бросает DOMException
+ * («target origin provided ('file://') does not match the recipient window's
+ * origin ('null')»), сообщение не уходит вообще — и на локальных видео все
+ * GM-запросы прелюда падали в таймаут. Единственный валидный таргет — `"*"`;
+ * получатель всё равно проверяет event.source и приватный маркер.
+ */
+function isUnusableTargetOrigin(origin: string | undefined): boolean {
+  return !origin || origin === "null" || origin === "file://";
+}
+
 export function getSameWindowPostMessageTargetOrigin(): string {
   const origin = globalThis.location?.origin;
 
-  // Opaque origins (about:blank, about:srcdoc, sandboxed frames) expose
-  // location.origin as "null". That string is not a valid postMessage
-  // target origin, so the only valid target is "*". The bridge still
-  // verifies event.source and the private marker before accepting messages.
-  return !origin || origin === "null" ? "*" : origin;
+  return isUnusableTargetOrigin(origin) ? "*" : (origin as string);
 }
 
 export function isSameWindowBridgeEvent(event: MessageEvent): boolean {
   if (event.source !== globalThis.window) return false;
 
   const origin = globalThis.location?.origin;
-  if (!origin || origin === "null") {
+  if (isUnusableTargetOrigin(origin)) {
+    // На file:// окно сообщает origin "null", а location.origin — "file://",
+    // поэтому прямое сравнение ниже не сработало бы и мост отверг бы
+    // собственные сообщения страницы.
     return event.origin === "null" || event.origin === origin;
   }
 

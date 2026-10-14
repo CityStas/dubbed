@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Dubbed local file reader</title>
+  </head>
+  <body>
+    <!--
+      Единственный контекст, которому доступен `file://` — страница самого
+      расширения. Контент-скрипт (и MAIN, и ISOLATED) читать локальный файл не
+      может: fetch → "Failed to fetch", XHR → status 0 (проверено стендом).
+      Эта страница встраивается скрытым <iframe> в file://-документ с видео и
+      отдаёт байты родителю через postMessage с transferable ArrayBuffer.
+    -->
+    <script src="localfile-reader.js"></script>
+  </body>
+</html>

@@ -63,7 +63,14 @@ function sendResponse(
   postToPage({ type: TYPE_RES, id, ok, result, error });
 }
 
-function bootstrapExtensionBridge(): void {
+/**
+ * Поднимает мост MAIN↔ISOLATED↔background.
+ *
+ * Экспортируется ради `localfile-bridge.iife.ts`: на `file://`-страницах мост
+ * обязан быть standalone-IIFE, а не CRXJS-лоадером с динамическим импортом
+ * (см. комментарий в этом файле-точке входа).
+ */
+export function bootstrapExtensionBridge(): void {
   const bridgeGlobal = globalThis as Record<string, unknown>;
   if (bridgeGlobal[BRIDGE_BOOT_KEY]) {
     debug.log("[Dubbed EXT][bridge] already initialized");

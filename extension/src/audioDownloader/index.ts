@@ -71,7 +71,13 @@ export class AudioDownloader {
   onDownloadedPartialAudio = new EventImpl<
     [string, DownloadedPartialAudioData]
   >();
-  onDownloadAudioError = new EventImpl<[string, string]>();
+  /**
+   * `cause` — исходное исключение. Раньше оно терялось здесь и оставалось
+   * только в debug-логе (в прод-сборке — no-op), поэтому пользователь видел
+   * «Failed to download audio» вообще без причины и без шанса отличить отмену
+   * от сбоя чтения файла.
+   */
+  onDownloadAudioError = new EventImpl<[string, string, unknown?]>();
 
   strategy: AvailableAudioDownloadType;
 
@@ -102,7 +108,7 @@ export class AudioDownloader {
         videoId,
         error: err instanceof Error ? err.message : String(err),
       });
-      this.onDownloadAudioError.dispatch(translationId, videoId);
+      this.onDownloadAudioError.dispatch(translationId, videoId, err);
     }
   }
 
@@ -116,7 +122,7 @@ export class AudioDownloader {
   ): this;
   addEventListener(
     type: "downloadAudioError",
-    listener: (translationId: string, videoId: string) => void,
+    listener: (translationId: string, videoId: string, cause?: unknown) => void,
   ): this;
   addEventListener(
     type: "downloadedAudio" | "downloadedPartialAudio" | "downloadAudioError",
@@ -147,7 +153,7 @@ export class AudioDownloader {
   ): this;
   removeEventListener(
     type: "downloadAudioError",
-    listener: (translationId: string, videoId: string) => void,
+    listener: (translationId: string, videoId: string, cause?: unknown) => void,
   ): this;
   removeEventListener(
     type: "downloadedAudio" | "downloadedPartialAudio" | "downloadAudioError",

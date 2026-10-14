@@ -29,6 +29,12 @@ const EXTENSION_MODULE_FILES = [
 
 const FIREFOX_UPDATES_MANIFEST_FILE = "dubbed-extension-firefox-updates.json";
 
+/** Статические файлы расширения (не бандлятся, копируются как есть). */
+const STATIC_EXTENSION_FILES = [
+  "localfile-reader.html",
+  "localfile-reader.js",
+] as const;
+
 export interface ExtensionBuildContext {
   availableLocales: string[];
   repoBranch: string;
@@ -239,6 +245,14 @@ async function copyExtensionFiles(targetDir: string): Promise<void> {
         path.join(iconsDstDir, iconFile),
       ),
     ),
+    // Страница-ридер локальных файлов (не бандлится, объявлена в
+    // web_accessible_resources — см. manifest-helpers.ts).
+    ...STATIC_EXTENSION_FILES.map((fileName) =>
+      fs.copyFile(
+        path.join(srcDir, "extension", fileName),
+        path.join(targetDir, fileName),
+      ),
+    ),
   ]);
 }
 
@@ -352,7 +366,15 @@ function buildManifestFirefox({
   includeWorld: boolean;
   config: BuildConfig;
 }): Record<string, unknown> {
-  const manifest = buildManifestChrome({ headers, includeWorld });
+  // `file://` здесь использует обычный `bridge.js`: в Firefox-пайплайне мост
+  // собирается одним файлом без динамических импортов (см. `verifyBundleSources`),
+  // а Chrome-специфичный IIFE-бандл `localfile-bridge.iife.js` в out-dir Firefox
+  // не попадает.
+  const manifest = buildManifestChrome({
+    headers,
+    includeWorld,
+    localFileBridgeScript: "bridge.js",
+  });
 
   const action = manifest.action as Record<string, unknown> | undefined;
   const defaultIcon = action?.default_icon as
@@ -422,7 +444,12 @@ async function writeFirefoxUpdatesManifest({
 
 function isValidMatchPattern(pattern: string): boolean {
   if (pattern === "<all_urls>") return true;
-  return /^(\*|http|https|file|ftp|ws|wss):\/\/(\*|\*\.[^/*]+|[^/*]+)\/.*$/.test(
+  // У `file:` хост ВСЕГДА пустой — каноничная форма `file:///*` (то же самое,
+  // что `file:///blah/*` в примерах MDN). Общая регулярка ниже требует
+  // непустой хост, поэтому `file:///*` она отвергала, и сборка Firefox падала
+  // на `host_permissions` ещё до выхода фичи с локальными видео.
+  if (/^file:\/\/(\*|\*\.[^/*]+|[^/*]+)?\/.*$/.test(pattern)) return true;
+  return /^(\*|http|https|ftp|ws|wss):\/\/(\*|\*\.[^/*]+|[^/*]+)\/.*$/.test(
     pattern,
   );
 }

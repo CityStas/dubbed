@@ -5,6 +5,10 @@ import {
 } from "@vot.js/core/types/yandex";
 import type { RequestLang, ResponseLang } from "@vot.js/shared/types/data";
 import { AudioDownloader } from "../audioDownloader";
+import {
+  LOCAL_FILE_STRATEGY,
+  WEB_MSE_PROXY_STRATEGY,
+} from "../audioDownloader/strategies";
 import { STREAM_TIMEOUT_MS } from "../audioDownloader/strategies/webMseProxy";
 import { localizationProvider } from "../localization/localizationProvider";
 import type {
@@ -19,7 +23,12 @@ import {
 } from "../utils/abort";
 import { deleteAccount, hasAccountToken } from "../utils/account";
 import debug from "../utils/debug";
-import { getErrorMessage, isAbortError, safeNestedGet } from "../utils/errors";
+import {
+  getErrorMessage,
+  isAbortError,
+  makeAbortError,
+  safeNestedGet,
+} from "../utils/errors";
 import type { VideoHandler } from "../VideoHandler";
 import DubbedLocalizedError from "../DubbedLocalizedError";
 import type { VideoData } from "../videoHandler/shared";
@@ -34,6 +43,7 @@ import {
   notifyTranslationFailureIfNeeded,
 } from "./translationErrors";
 import { TranslationEtaCountdown } from "./translationEtaCountdown";
+import { isLocalFilePage, resetLocalFileReaderState } from "./localFile";
 
 /**
  * Historically we used `patch-package` to make `@vot.js/core` throw
@@ -137,9 +147,24 @@ export class DubbedTranslationHandler {
   // In normal operation we should upload audio through the MSE proxy path.
   private readonly requestedFailAudio = new Set<string>();
 
+  /**
+   * [localfile] Сколько чанков уже ушло в Яндекс в текущей попытке. Нужен, чтобы
+   * понять, безопасно ли перезапускать загрузку: пока счётчик нулевой, сессия
+   * пустая и повтор не мешает серверу.
+   */
+  private uploadedChunks = 0;
+  /** [localfile] Сколько раз мы уже перезапускали загрузку аудио. */
+  private localDownloadRetries = 0;
+  /** Сигнал активной загрузки — нужен для повтора из `onDownloadAudioError`. */
+  private activeDownloadSignal: AbortSignal | null = null;
+
   constructor(videoHandler: VideoHandler) {
     this.videoHandler = videoHandler;
-    this.audioDownloader = new AudioDownloader();
+    // [localfile] На `file://` аудио берём не из MSE (его там нет), а из
+    // ридера расширения — единственного контекста с доступом к локальному файлу.
+    this.audioDownloader = new AudioDownloader(
+      isLocalFilePage() ? LOCAL_FILE_STRATEGY : WEB_MSE_PROXY_STRATEGY,
+    );
     this.downloading = false;
     this.etaCountdown = new TranslationEtaCountdown(
       (message, signal, options) =>
@@ -223,14 +248,21 @@ export class DubbedTranslationHandler {
       return;
     }
 
+    this.uploadedChunks += 1;
+
     if (amount !== undefined && index === amount - 1) {
       this.finishDownloadSuccess();
     }
   };
 
+  private isActionAborted(): boolean {
+    return Boolean(this.videoHandler.actionsAbortController?.signal?.aborted);
+  }
+
   private readonly onDownloadAudioError = async (
     translationId: string,
     videoId: string,
+    cause?: unknown,
   ) => {
     if (!this.downloading) {
       debug.log("skip downloadAudioError");
@@ -239,6 +271,55 @@ export class DubbedTranslationHandler {
 
     debug.log(`Failed to download audio ${videoId}`);
     const videoUrl = this.getCanonicalUrl(videoId);
+
+    // ⚠️ Отмена — это НЕ сбой загрузки. Сценарий, который ломал `file://`:
+    // пользователь нажимает «Перевести видео» повторно, пока идёт заливка
+    // (`handleTranslationBtnClick` → `actionsAbortController.abort()`), генератор
+    // чанков бросает исключение, `runAudioDownload` докладывает
+    // `downloadAudioError`, а `shouldUseFallback` для `custom` заведомо false →
+    // пользователь получал тупиковое «Failed to download audio» вместо тихой
+    // отмены. Для YouTube та же ветка уходила в fail-audio-js с уже мёртвым
+    // сигналом — то есть та же ложная ошибка.
+    if (isAbortError(cause) || this.isActionAborted()) {
+      debug.log("[Translation] audio download aborted", { videoId, cause });
+      this.finishDownloadFailure(makeAbortError());
+      return;
+    }
+
+    // [localfile] Единственный источник байтов — ридер расширения, и он может
+    // не подняться с первого раза (мост не успел ответить, iframe не загрузился).
+    // Пока в Яндекс не ушёл ни один чанк, повтор безопасен: сессия пустая, а
+    // `waitForAudioDownloadCompletion` ещё висит и дождётся успеха — пользователь
+    // не увидит ни ошибки, ни лишнего клика.
+    if (
+      isLocalFilePage() &&
+      this.uploadedChunks === 0 &&
+      this.localDownloadRetries < DubbedTranslationHandler.LOCAL_DOWNLOAD_MAX_RETRIES
+    ) {
+      this.localDownloadRetries += 1;
+      resetLocalFileReaderState();
+      console.warn("[Dubbed][localfile] повтор чтения локального файла", {
+        videoId,
+        attempt: this.localDownloadRetries,
+        cause: getErrorMessage(cause),
+      });
+      this.downloading = true;
+      await this.audioDownloader.runAudioDownload(
+        videoId,
+        translationId,
+        this.activeDownloadSignal ?? NEVER_ABORTED_SIGNAL,
+      );
+      return;
+    }
+
+    if (isLocalFilePage()) {
+      // Причину терять нельзя: в прод-сборке `debug.*` — no-op, и пользователь
+      // видел только «Failed to download audio» без единой зацепки.
+      console.warn("[Dubbed][localfile] не удалось загрузить аудио", {
+        videoId,
+        cause,
+      });
+    }
 
     // The fail-audio-js endpoint is a rare fallback. Keep its usage minimal and
     // only call it for YouTube when the audio downloader is enabled.
@@ -393,6 +474,13 @@ export class DubbedTranslationHandler {
    * очередь Яндекса ещё шла. `SHOULD_RETRY_MAX_ATTEMPTS` оставлен только как
    * страховка от бесконечного цикла.
    */
+  /**
+   * [localfile] Сколько раз перезапускать загрузку аудио, если ридер расширения
+   * не отдал файл с первого раза. Два — потому что первый провал почти всегда
+   * «мост/iframe не успели», а не «файла нет».
+   */
+  private static readonly LOCAL_DOWNLOAD_MAX_RETRIES = 2;
+
   private static readonly SHOULD_RETRY_MAX_TOTAL_MS = 12 * 60 * 1000;
   private static readonly SHOULD_RETRY_MAX_ATTEMPTS = 180;
   private static readonly SHOULD_RETRY_MIN_DELAY_MS = 5_000;
@@ -601,6 +689,9 @@ export class DubbedTranslationHandler {
           translationId: res.translationId,
         });
         this.downloading = true;
+        this.uploadedChunks = 0;
+        this.localDownloadRetries = 0;
+        this.activeDownloadSignal = signal;
 
         debug.log("[Translation] waiting for audio download completion", {
           videoId: videoData.videoId,

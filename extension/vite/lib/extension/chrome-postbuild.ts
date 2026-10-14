@@ -2,7 +2,29 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { zipDir } from "../../../scripts/zip/utils";
 import type { BuildConfig } from "../env";
-import { distExtDir } from "../paths";
+import { distExtDir, srcDir } from "../paths";
+
+/**
+ * Статические файлы расширения, которые не проходят через бандлер.
+ *
+ * `localfile-reader.{html,js}` — страница-ридер локальных файлов. Она объявлена
+ * в `web_accessible_resources` (см. `manifest-helpers.ts`), поэтому обязана
+ * лежать в корне собранного расширения; собирать её бандлом незачем — там нет
+ * импортов.
+ */
+const STATIC_EXTENSION_FILES = ["localfile-reader.html", "localfile-reader.js"] as const;
+
+export async function copyStaticExtensionFiles(targetDir: string): Promise<void> {
+  await fs.mkdir(targetDir, { recursive: true });
+  await Promise.all(
+    STATIC_EXTENSION_FILES.map((fileName) =>
+      fs.copyFile(
+        path.join(srcDir, "extension", fileName),
+        path.join(targetDir, fileName),
+      ),
+    ),
+  );
+}
 
 
 export async function writeChromeUpdatesManifest({
@@ -34,6 +56,8 @@ export async function finalizeChromeBuild(
 ): Promise<void> {
   const chromeDir = path.join(distExtDir, "chrome");
   const version = String(headers.version || "");
+
+  await copyStaticExtensionFiles(chromeDir);
 
   const zipPath = path.join(distExtDir, "dubbed-extension-chrome.zip");
   await zipDir(chromeDir, zipPath);

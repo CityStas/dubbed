@@ -17,6 +17,11 @@ import type { VideoHandler } from "../VideoHandler";
 import DubbedLocalizedError from "../DubbedLocalizedError";
 import type { VideoData as RuntimeVideoData } from "../videoHandler/shared";
 import { isExternalVolumeHost } from "./hostPolicies";
+import {
+  buildLocalFileApiTarget,
+  getLocalFileUrl,
+  isLocalFilePage,
+} from "./localFile";
 import { detect } from "./translateApis";
 
 const FORCED_DETECTED_LANGUAGE_BY_HOST: Record<string, RequestLang> = {
@@ -450,9 +455,22 @@ export class DubbedVideoManager {
       language: localizationProvider.lang,
     });
 
+    // [localfile] `file:///…/video.mp4`: Яндекс физически не может скачать файл
+    // с диска зрителя. Подменяем таргет на синтетический youtu.be-id — по нему
+    // у Яндекса уже отлажен сценарий «клиент сам пришлёт аудио» (status 6
+    // AUDIO_REQUESTED), а реальные байты уходят отдельной чанкованной загрузкой
+    // (см. `src/core/localFile.ts` и `audioDownloader/strategies/localFile.ts`).
+    // `videoId` обязан совпадать с `url`: загрузка аудио адресуется той же
+    // канонической ссылке (`getCanonicalUrl` в translationHandler).
+    const localApiTarget = isLocalFilePage()
+      ? buildLocalFileApiTarget(getLocalFileUrl())
+      : null;
+    const effectiveVideoId = localApiTarget?.videoId ?? videoId;
+    const effectiveUrl = localApiTarget?.url ?? url;
+
     const { detectedLanguage, sharedLanguageState } =
       await this.resolveVideoLanguage({
-        videoId,
+        videoId: effectiveVideoId,
         isStream,
         possibleLanguage,
         subtitles,
@@ -468,8 +486,8 @@ export class DubbedVideoManager {
         duration ||
         this.videoHandler.video?.duration ||
         dubbedConfig.defaultDuration, // if 0, we get 400 error
-      videoId,
-      url,
+      videoId: effectiveVideoId,
+      url: effectiveUrl,
       host,
       detectedLanguage,
       responseLanguage: this.videoHandler.translateToLang,

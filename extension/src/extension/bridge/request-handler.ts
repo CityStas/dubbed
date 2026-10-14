@@ -40,6 +40,15 @@ export async function handleBridgeRequest(
       const id = ext?.runtime?.id ?? null;
       return { manifest, id };
     }
+    // [localfile] URL страницы-ридера локальных файлов. MAIN-мир не видит
+    // `chrome.runtime`, поэтому единственный способ собрать
+    // `chrome-extension://<id>/localfile-reader.html` — спросить у моста.
+    case "localFileReaderUrl": {
+      const getUrl = ext?.runtime?.getURL;
+      return {
+        url: typeof getUrl === "function" ? getUrl("localfile-reader.html") : null,
+      };
+    }
     case "gm_getValue":
     case "gm_setValue":
     case "gm_deleteValue":

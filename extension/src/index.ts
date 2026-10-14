@@ -7,6 +7,7 @@ import { bindObserverListeners } from "./bootstrap/videoObserverBinding";
 import { authServerUrl } from "./config/config";
 import { resolveBootstrapMode } from "./core/bootstrapPolicy";
 import { findConnectedContainerBySelector } from "./core/containerResolution";
+import { getLocalFileService } from "./core/localFile";
 import debug from "./utils/debug";
 import { initFrameExpansionHost } from "./utils/frameExpansion";
 import { isIframe } from "./utils/iframeConnector";
@@ -45,7 +46,15 @@ function logBootstrap(
 }
 
 function getServicesCached(): ServiceConf[] {
-  servicesCache ??= getService();
+  if (!servicesCache) {
+    // [localfile] Для `file://` SDK-шный `getService()` всегда возвращает [] —
+    // в `@vot.js/ext/utils/videoData` стоит ранний выход по `localLinkRe`
+    // (`file://…|localhost|127.0.0.1|192.168.*`). Поэтому локальный сервис
+    // подставляем сами; всё локальное поведение включается по протоколу
+    // страницы, а не по хосту.
+    const localFileService = getLocalFileService();
+    servicesCache = localFileService ? [localFileService] : getService();
+  }
   return servicesCache;
 }
 

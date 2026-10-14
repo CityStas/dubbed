@@ -22,6 +22,8 @@
     "*://*.standby-rezka.tv/*",
     "https://standby-rezka.tv/*",
     "https://*.standby-rezka.tv/*",
+    "*://rezka-tv.org/*",
+    "*://*.rezka-tv.org/*",
     "*://kinogo.ec/*",
     "*://*.kinogo.ec/*",
     "*://kinogo.biz/*",
@@ -122,18 +124,18 @@
     "*://projector.datacamp.com/*",
     "*://fast.wistia.net/*",
     "*://*/*.mp4*",
-    "*://*/*.webm*"
+    "*://*/*.webm*",
+    "file:///*"
   ],
   "grant": ["window.focus"],
   "exclude": [
-    "file://*/*.mp4*",
-    "file://*/*.webm*",
     "*://accounts.youtube.com/*"
   ],
   "require": [
     "https://gist.githubusercontent.com/ilyhalight/6eb5bb4dffc7ca9e3c57d6933e2452f3/raw/7ab38af2228d0bed13912e503bc8a9ee4b11828d/gm-addstyle-polyfill.js"
   ],
   "connect": [
+    "file:///*",
     "yandex.ru",
     "disk.yandex.kz",
     "disk.yandex.com",

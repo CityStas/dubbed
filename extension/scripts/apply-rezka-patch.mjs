@@ -99,6 +99,25 @@ fs.copyFileSync(path.join(patchDir, "rezka.d.ts"), files.helperDts);
   }
 }
 // 6. data/sites.js — сервис rezka
+//
+// Список зеркал Rezka. ВАЖНО: держать его ОДНИМ источником правды — правки
+// «руками» в node_modules теряются при `npm install`, а idempotent-проверка
+// `t.includes("ExtVideoService.rezka")` (как было раньше) не давала добавить
+// НОВОЕ зеркало в уже пропатченный файл: блок считался установленным, и
+// `rezka-tv.org` молча не попадал ни в sites.js, ни в манифест.
+const REZKA_DOMAINS = [
+  "rezka\\.ag",
+  "hdrezka\\.ag",
+  "hdrezka-home\\.tv",
+  "hdrezka\\.me",
+  "hdrezka\\.fi",
+  "rezka\\.tv",
+  "standby-rezka\\.tv",
+  "rezka-tv\\.org",
+];
+const rezkaMatchLines = REZKA_DOMAINS.map(
+  (d) => `            /^(www\\.)?${d}$/,`,
+).join("\n");
 {
   let t = read(files.sites);
   if (!t.includes("ExtVideoService.rezka")) {
@@ -114,19 +133,29 @@ fs.copyFileSync(path.join(patchDir, "rezka.d.ts"), files.helperDts);
         host: ExtVideoService.rezka,
         url: "stub",
         match: [
-            /^(www\\.)?rezka\\.ag$/,
-            /^(www\\.)?hdrezka\\.ag$/,
-            /^(www\\.)?hdrezka-home\\.tv$/,
-            /^(www\\.)?hdrezka\\.me$/,
-            /^(www\\.)?hdrezka\\.fi$/,
-            /^(www\\.)?rezka\\.tv$/,
-            /^(www\\.)?standby-rezka\\.tv$/,
+${rezkaMatchLines}
         ],
         selector: "#videoplayer, .b-player",
         needExtraData: true,
     },`;
     t = t.replace(anchor, withRezka);
     write(files.sites, t);
+  } else {
+    // Блок уже есть — доводим список зеркал до актуального, вставляя
+    // недостающие строки ПЕРЕД закрывающей `],` блока rezka.
+    const blockStart = t.indexOf("ExtVideoService.rezka");
+    const closeIdx = t.indexOf("        ],", blockStart);
+    if (closeIdx !== -1) {
+      const block = t.slice(blockStart, closeIdx);
+      const missing = REZKA_DOMAINS.filter(
+        (d) => !block.includes(`?${d}$`),
+      ).map((d) => `            /^(www\\.)?${d}$/,`);
+      if (missing.length) {
+        t = t.slice(0, closeIdx) + missing.join("\n") + "\n" + t.slice(closeIdx);
+        write(files.sites, t);
+        console.log(`[rezka-patch] добавлены зеркала: ${missing.length}`);
+      }
+    }
   }
 }
 

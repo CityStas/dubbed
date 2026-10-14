@@ -417,8 +417,10 @@ export class OverlayView {
     if (!this.pipButtonVisible) {
       this.dubbedButton.showPiPButton(false);
     }
-    // Subtitles mode icon is hidden from the button in this build.
-    this.dubbedButton.showSubtitlesButton(false);
+    // Subtitles mode icon on the button is ENABLED again (2026-10-15):
+    // пользователь просил вернуть возможность включить субтитры прямо из
+    // оверлея. Кнопка слушает `click:subtitles` → `toggleSubtitlesForCurrentLangPair`.
+    this.dubbedButton.showSubtitlesButton(true);
     this.root.appendChild(this.dubbedButton.container);
     this.dubbedButton.syncDropdownArrowPlacement();
 
@@ -593,8 +595,9 @@ export class OverlayView {
       this.videoVolumeSlider.container,
       this.translationVolumeSlider.container,
     );
-    // Subtitles settings are hidden in the quick settings ("...") menu.
-    this.subtitlesSelect.hidden = true;
+    // Subtitles mode select ("Выключены" / язык) is shown in the quick ("...")
+    // menu again — без него включить субтитры можно было только хоткеем.
+    this.subtitlesSelect.hidden = false;
 
     // "How to use?" — pinned, always-visible bar at the bottom of the quick menu.
     const howTo = ui.createEl("dubbed-block", ["dubbed-howto"]);
