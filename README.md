@@ -1,6 +1,6 @@
 # DUBBED
 
-<img src="assets/main.jpg" alt="Лендинг DUBBED: смотри любое видео на русском" width="720">
+<img src="assets/main.jpg" alt="Лендинг DUBBED: смотри любимые видео на русском" width="720">
 
 Бесплатное расширение для Chrome и Firefox: мгновенная AI-озвучка фильмов, сериалов и видео прямо в браузере. Быстрая озвучка на доменах HDrezka; работает в VK, Telegram, YouTube и многих других сайтов.
 
